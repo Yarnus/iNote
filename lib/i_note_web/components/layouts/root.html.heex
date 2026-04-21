@@ -1,0 +1,30 @@
+<% locale =
+  assigns[:locale] ||
+    if(assigns[:conn], do: assigns.conn.assigns[:locale], else: nil) ||
+    "en" %> <!DOCTYPE html>
+<html lang={locale} data-theme-mode="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <script>
+      (() => {
+        const stored = localStorage.getItem("inote:theme");
+        const mode = stored === "light" || stored === "dark" ? stored : "system";
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const resolved = mode === "system" ? (systemDark ? "dark" : "light") : mode;
+        document.documentElement.dataset.theme = resolved;
+        document.documentElement.dataset.themeMode = mode;
+      })();
+    </script>
+    <.live_title suffix=" - iNote">
+      {assigns[:page_title] || "iNote"}
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+  </head>
+  <body class="app-body">
+    {@inner_content}
+  </body>
+</html>

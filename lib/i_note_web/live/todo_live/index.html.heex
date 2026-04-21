@@ -1,0 +1,62 @@
+<section class="main-page">
+  <header class="main-page__header">
+    <div>
+      <p class="main-page__eyebrow">{t(@locale, :todos)}</p>
+      <h1 class="main-page__title">{t(@locale, :todos_title)}</h1>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="filter-row">
+      <button
+        type="button"
+        class={["filter-pill", @filter == :all && "is-active"]}
+        phx-click="change_filter"
+        phx-value-filter="all"
+      >
+        {t(@locale, :filter_all)} ({@counts.all})
+      </button>
+      <button
+        type="button"
+        class={["filter-pill", @filter == :open && "is-active"]}
+        phx-click="change_filter"
+        phx-value-filter="open"
+      >
+        {t(@locale, :filter_open)} ({@counts.open})
+      </button>
+      <button
+        type="button"
+        class={["filter-pill", @filter == :done && "is-active"]}
+        phx-click="change_filter"
+        phx-value-filter="done"
+      >
+        {t(@locale, :filter_done)} ({@counts.done})
+      </button>
+    </div>
+  </section>
+
+  <section :if={@todos == []} class="empty-panel">
+    <p>{t(@locale, :no_todos)}</p>
+  </section>
+
+  <section :if={@todos != []} class="panel">
+    <div class="todo-list">
+      <article :for={todo <- @todos} class={["todo-row", todo.is_done && "is-done"]}>
+        <div>
+          <p class="todo-row__text">{todo.text}</p>
+          <p class="todo-row__meta">
+            {note_meta(@locale, %{kind: todo.note_kind, note_date: todo.note_date})} · line {todo.line_no}
+          </p>
+        </div>
+        <.link
+          navigate={
+            note_path(%{id: todo.note_id, kind: todo.note_kind, note_date: todo.note_date})
+          }
+          class="text-link"
+        >
+          {t(@locale, :open_note)}
+        </.link>
+      </article>
+    </div>
+  </section>
+</section>

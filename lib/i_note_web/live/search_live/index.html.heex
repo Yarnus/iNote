@@ -1,0 +1,43 @@
+<section class="main-page">
+  <header class="main-page__header">
+    <div>
+      <p class="main-page__eyebrow">{t(@locale, :search)}</p>
+      <h1 class="main-page__title">{t(@locale, :search_title)}</h1>
+    </div>
+  </header>
+
+  <section class="panel">
+    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form">
+      <label for="search-page-input" class="field-label">{t(@locale, :query)}</label>
+      <input
+        id="search-page-input"
+        name="q"
+        type="search"
+        class="text-input text-input--large"
+        value={@query}
+        placeholder={t(@locale, :search_placeholder)}
+        phx-debounce="250"
+      />
+    </.form>
+  </section>
+
+  <section :if={@query == ""} class="empty-panel">
+    <p>{t(@locale, :full_text_search)}</p>
+  </section>
+
+  <section :if={@query != "" and @results == []} class="empty-panel">
+    <p>{t(@locale, :no_search_results)}</p>
+  </section>
+
+  <section :if={@results != []} class="panel">
+    <div class="result-list">
+      <.link :for={result <- @results} navigate={note_path(result)} class="result-row">
+        <div>
+          <p class="result-row__title">{result.title}</p>
+          <p class="result-row__meta">{note_meta(@locale, result)}</p>
+          <p class="result-row__snippet">{raw(result.snippet)}</p>
+        </div>
+      </.link>
+    </div>
+  </section>
+</section>

@@ -1,0 +1,65 @@
+<section class="main-page">
+  <header class="main-page__header">
+    <div>
+      <p class="main-page__eyebrow">{t(@locale, :notes)}</p>
+      <h1 class="main-page__title">{t(@locale, :notes_title)}</h1>
+    </div>
+
+    <button type="button" phx-click="create_note" class="pill-button">
+      {t(@locale, :create_note)}
+    </button>
+  </header>
+
+  <section class="panel">
+    <div class="filter-row filter-row--wide">
+      <.form for={%{"q" => @query}} as={:search} phx-change="query_changed" class="toolbar-field">
+        <input
+          id="note-query"
+          name="q"
+          type="search"
+          class="text-input"
+          value={@query}
+          placeholder={t(@locale, :search_notes_placeholder)}
+          phx-debounce="250"
+        />
+      </.form>
+
+      <.form
+        for={%{"sort" => @sort}}
+        as={:sort}
+        phx-change="sort_changed"
+        class="toolbar-field toolbar-field--compact"
+      >
+        <select id="note-sort" name="sort" class="text-input">
+          <option value="updated_desc" selected={@sort == "updated_desc"}>
+            {t(@locale, :sort_recent)}
+          </option>
+          <option value="updated_asc" selected={@sort == "updated_asc"}>
+            {t(@locale, :sort_oldest)}
+          </option>
+          <option value="title_asc" selected={@sort == "title_asc"}>
+            {t(@locale, :sort_title_asc)}
+          </option>
+          <option value="title_desc" selected={@sort == "title_desc"}>
+            {t(@locale, :sort_title_desc)}
+          </option>
+        </select>
+      </.form>
+    </div>
+  </section>
+
+  <section :if={@notes == []} class="empty-panel">
+    <p>{if @query == "", do: t(@locale, :no_notes_yet), else: t(@locale, :no_notes_match)}</p>
+  </section>
+
+  <section :if={@notes != []} class="panel">
+    <div class="result-list">
+      <.link :for={note <- @notes} navigate={~p"/notes/#{note.id}"} class="result-row">
+        <div>
+          <p class="result-row__title">{note.title}</p>
+          <p class="result-row__meta">{Calendar.strftime(note.updated_at, "%Y-%m-%d %H:%M")}</p>
+        </div>
+      </.link>
+    </div>
+  </section>
+</section>

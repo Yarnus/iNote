@@ -1,0 +1,61 @@
+<section class="main-page">
+  <header class="main-page__header">
+    <div>
+      <p class="main-page__eyebrow">{t(@locale, :tags)}</p>
+      <h1 class="main-page__title">{t(@locale, :tags_title)}</h1>
+    </div>
+  </header>
+
+  <section class="panel">
+    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form">
+      <label for="tag-query" class="field-label">{t(@locale, :query)}</label>
+      <input
+        id="tag-query"
+        name="q"
+        type="search"
+        class="text-input"
+        value={@query}
+        placeholder={t(@locale, :tag_search_title)}
+        phx-debounce="250"
+      />
+    </.form>
+  </section>
+
+  <section :if={@tags == []} class="empty-panel">
+    <p>{t(@locale, :no_tags)}</p>
+  </section>
+
+  <div :if={@tags != []} class="split-grid">
+    <section class="panel">
+      <div class="tag-list">
+        <.link
+          :for={tag <- @tags}
+          patch={~p"/tags?#{[q: @query, tag: tag.tag]}"}
+          class={["tag-chip", @selected_tag == tag.tag && "is-active"]}
+        >
+          <span>#{tag.tag}</span>
+          <span class="tag-chip__count">{tag.count}</span>
+        </.link>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div :if={is_nil(@selected_tag)} class="empty-panel empty-panel--flat">
+        <p>{t(@locale, :pick_tag)}</p>
+      </div>
+
+      <div :if={@selected_tag && @notes == []} class="empty-panel empty-panel--flat">
+        <p>{t(@locale, :no_notes_for_tag)}</p>
+      </div>
+
+      <div :if={@selected_tag && @notes != []} class="result-list">
+        <.link :for={note <- @notes} navigate={note_path(note)} class="result-row">
+          <div>
+            <p class="result-row__title">{note.title}</p>
+            <p class="result-row__meta">{note_meta(@locale, note)}</p>
+          </div>
+        </.link>
+      </div>
+    </section>
+  </div>
+</section>

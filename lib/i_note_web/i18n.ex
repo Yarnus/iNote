@@ -1,0 +1,139 @@
+defmodule INoteWeb.I18n do
+  @moduledoc false
+
+  @default_locale "en"
+
+  @messages %{
+    "en" => %{
+      app_name: "iNote",
+      app_subtitle: "Local markdown notes",
+      search: "Search",
+      search_placeholder: "Search notes",
+      todos: "TODOs",
+      tags: "Tags",
+      daily_notes: "Daily",
+      notes: "Notes",
+      notes_title: "All notes",
+      general_note: "General note",
+      create_note: "New note",
+      new_note_placeholder: "Enter a title for your note",
+      search_notes_placeholder: "Filter notes",
+      sort_recent: "Recently updated",
+      sort_oldest: "Oldest updated",
+      sort_title_asc: "Title A-Z",
+      sort_title_desc: "Title Z-A",
+      no_notes_match: "No notes match this filter.",
+      delete_note: "Delete note",
+      delete_note_confirm: "Delete this note?",
+      no_notes_yet: "No notes yet.",
+      no_results: "No results",
+      empty_note: "Start writing your note.",
+      save_hint: "Autosaves while typing",
+      saved: "Saved just now",
+      dark_mode: "Theme",
+      settings: "Settings",
+      theme_system: "System",
+      theme_dark: "Dark",
+      theme_light: "Light",
+      language: "Language",
+      today: "Today",
+      previous_day: "Previous day",
+      next_day: "Next day",
+      open_note: "Open note",
+      note_title: "Title",
+      editor_placeholder: "Write markdown notes here...",
+      sidebar_calendar: "Calendar",
+      full_text_search: "Full-text search",
+      filter_all: "All",
+      filter_open: "Open",
+      filter_done: "Done",
+      todo_filter_title: "TODO filter",
+      tag_search_title: "Tag search",
+      pick_tag: "Choose a tag to view notes.",
+      query: "Query",
+      home_title: "Daily note",
+      search_title: "Search notes",
+      tags_title: "Tag browser",
+      todos_title: "TODO items",
+      no_todos: "No TODO items found.",
+      no_tags: "No tags found.",
+      no_notes_for_tag: "No notes for this tag.",
+      no_search_results: "No matching notes found."
+    },
+    "zh" => %{
+      app_name: "iNote",
+      app_subtitle: "本地 Markdown 笔记",
+      search: "搜索",
+      search_placeholder: "搜索笔记",
+      todos: "待办",
+      tags: "标签",
+      daily_notes: "每日",
+      notes: "笔记",
+      notes_title: "全部笔记",
+      general_note: "普通笔记",
+      create_note: "新建笔记",
+      new_note_placeholder: "输入笔记标题",
+      search_notes_placeholder: "筛选笔记",
+      sort_recent: "最近更新",
+      sort_oldest: "最早更新",
+      sort_title_asc: "标题 A-Z",
+      sort_title_desc: "标题 Z-A",
+      no_notes_match: "没有匹配当前筛选的笔记。",
+      delete_note: "删除笔记",
+      delete_note_confirm: "确认删除这条笔记？",
+      no_notes_yet: "还没有普通笔记。",
+      no_results: "没有结果",
+      empty_note: "开始记录内容。",
+      save_hint: "输入时自动保存",
+      saved: "刚刚已保存",
+      dark_mode: "主题",
+      settings: "设置",
+      theme_system: "跟随系统",
+      theme_dark: "深色",
+      theme_light: "浅色",
+      language: "语言",
+      today: "今天",
+      previous_day: "前一天",
+      next_day: "后一天",
+      open_note: "打开笔记",
+      note_title: "标题",
+      editor_placeholder: "在这里编写 Markdown 笔记...",
+      sidebar_calendar: "日历",
+      full_text_search: "全文搜索",
+      filter_all: "全部",
+      filter_open: "未完成",
+      filter_done: "已完成",
+      todo_filter_title: "待办筛选",
+      tag_search_title: "标签检索",
+      pick_tag: "选择一个标签查看相关笔记。",
+      query: "查询",
+      home_title: "每日笔记",
+      search_title: "搜索笔记",
+      tags_title: "标签浏览",
+      todos_title: "待办项",
+      no_todos: "没有符合条件的待办项。",
+      no_tags: "没有找到标签。",
+      no_notes_for_tag: "该标签下没有笔记。",
+      no_search_results: "没有匹配的笔记。"
+    }
+  }
+
+  def locales, do: ["en", "zh"]
+
+  def normalize_locale(locale) when locale in ["en", "zh"], do: locale
+  def normalize_locale("zh-CN"), do: "zh"
+  def normalize_locale("zh-TW"), do: "zh"
+  def normalize_locale("zh-HK"), do: "zh"
+  def normalize_locale(_), do: @default_locale
+
+  def t(locale, key) when is_atom(key) do
+    locale = normalize_locale(locale)
+    @messages[locale][key] || @messages[@default_locale][key] || Atom.to_string(key)
+  end
+
+  def weekday_labels("zh"), do: ["一", "二", "三", "四", "五", "六", "日"]
+  def weekday_labels(_), do: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+  def month_label("zh", %Date{} = date), do: Calendar.strftime(date, "%Y年%m月")
+  def month_label(_, %Date{} = date), do: Calendar.strftime(date, "%B %Y")
+end

@@ -1,0 +1,47 @@
+<section class="main-page">
+  <header class="main-page__header main-page__header--editor">
+    <div>
+      <p class="main-page__eyebrow">{t(@locale, :daily_notes)}</p>
+      <h1 class="main-page__title">{page_date_title(@locale, @selected_date)}</h1>
+      <p class={["main-page__subtitle", @save_status == :saved && "is-saved"]}>
+        {save_status_text(@locale, @save_status)}
+      </p>
+    </div>
+
+    <nav class="date-nav" aria-label={t(@locale, :sidebar_calendar)}>
+      <.link
+        navigate={~p"/daily/#{Date.to_iso8601(Date.add(@selected_date, -1))}"}
+        class="pill-button"
+      >
+        {t(@locale, :previous_day)}
+      </.link>
+      <.link
+        navigate={~p"/daily/#{Date.to_iso8601(Date.utc_today())}"}
+        class="pill-button"
+      >
+        {t(@locale, :today)}
+      </.link>
+      <.link
+        navigate={~p"/daily/#{Date.to_iso8601(Date.add(@selected_date, 1))}"}
+        class="pill-button"
+      >
+        {t(@locale, :next_day)}
+      </.link>
+    </nav>
+  </header>
+
+  <section :if={@note} class="editor-panel">
+    <div
+      id={"markdown-editor-#{@note.id}"}
+      class="editor-shell"
+      phx-hook="MarkdownEditor"
+      phx-update="ignore"
+      data-note-id={@note.id}
+      data-note-title={@note.title}
+      data-content-md={@note.content_md}
+      data-placeholder={t(@locale, :editor_placeholder)}
+    >
+      <div class="markdown-editor" data-markdown-editor></div>
+    </div>
+  </section>
+</section>
