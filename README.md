@@ -65,6 +65,8 @@ Install dependencies, create the database, and build assets:
 make setup
 ```
 
+`make setup`, `make assets`, and `make release` now install `assets/package.json` dependencies automatically.
+
 Run the app:
 
 ```bash
