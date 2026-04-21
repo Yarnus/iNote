@@ -119,10 +119,62 @@ const MarkdownEditor = {
   }
 }
 
+const CopyButton = {
+  mounted() {
+    this.defaultLabel = this.el.dataset.copyDefault || this.el.textContent.trim()
+    this.successLabel = this.el.dataset.copySuccess || this.defaultLabel
+    this.resetTimer = null
+
+    this.onClick = async event => {
+      event.preventDefault()
+
+      const target = document.getElementById(this.el.dataset.copyTarget)
+      if (!target) return
+
+      const text = "value" in target ? target.value : target.innerText
+      const copied = await copyText(text, target)
+
+      if (copied) {
+        this.el.textContent = this.successLabel
+        window.clearTimeout(this.resetTimer)
+        this.resetTimer = window.setTimeout(() => {
+          this.el.textContent = this.defaultLabel
+        }, 1500)
+      }
+    }
+
+    this.el.addEventListener("click", this.onClick)
+  },
+
+  destroyed() {
+    window.clearTimeout(this.resetTimer)
+    this.el.removeEventListener("click", this.onClick)
+  }
+}
+
+const copyText = async (text, target) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch (_error) {
+    if (!("select" in target)) return false
+
+    target.focus()
+    target.select()
+
+    try {
+      return document.execCommand("copy")
+    } finally {
+      target.setSelectionRange?.(0, 0)
+      target.blur()
+    }
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 let liveSocket = new LiveSocket("/live", Socket, {
-  hooks: {MarkdownEditor},
+  hooks: {CopyButton, MarkdownEditor},
   params: {_csrf_token: csrfToken}
 })
 

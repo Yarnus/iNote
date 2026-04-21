@@ -523,6 +523,11 @@ mark {
   background: var(--accent-soft);
 }
 
+.pill-button--accent {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .date-nav {
   display: flex;
   gap: 0.5rem;
@@ -532,6 +537,65 @@ mark {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.report-panel {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.report-weeks {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.report-week {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.report-week__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.08rem;
+}
+
+.report-week__list {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.report-week__list li code {
+  color: var(--text-muted);
+}
+
+.report-output {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.report-output__textarea {
+  width: 100%;
+  min-height: 20rem;
+  resize: vertical;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--editor-surface);
+  color: var(--text);
+  padding: 1rem;
+  line-height: 1.55;
+  outline: none;
+}
+
+.report-output__textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .editor-panel {

@@ -14,6 +14,8 @@ defmodule INoteWeb.DailyNoteLive.Show do
        page_title: "Daily note",
        search_query: "",
        selected_date: today,
+       monthly_report_path:
+         ~p"/reports/monthly/#{Date.to_iso8601(Date.beginning_of_month(today))}",
        note: nil,
        calendar_note_dates: [],
        save_status: :idle
@@ -31,6 +33,8 @@ defmodule INoteWeb.DailyNoteLive.Show do
            page_title: Date.to_iso8601(date),
            current_path: ~p"/daily/#{Date.to_iso8601(date)}",
            selected_date: date,
+           monthly_report_path:
+             ~p"/reports/monthly/#{Date.to_iso8601(Date.beginning_of_month(date))}",
            note: note,
            calendar_note_dates: Notes.list_dates_with_daily_notes(date),
            save_status: :idle

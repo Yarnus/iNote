@@ -23,6 +23,7 @@ defmodule INoteWeb.Router do
 
     live_session :default, on_mount: [INoteWeb.Live.LocaleHook] do
       live "/daily/:date", DailyNoteLive.Show, :show
+      live "/reports/monthly/:month", MonthlyReportLive.Show, :show
       live "/notes", NoteLive.Index, :index
       live "/notes/:id", NoteLive.Show, :show
       live "/search", SearchLive.Index, :index

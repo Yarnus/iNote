@@ -103,4 +103,125 @@ defmodule INote.NotesTest do
 
     assert daily.note_date in dates
   end
+
+  test "list_monthly_report_weeks/1 groups daily note checkboxes by report week" do
+    april_first = Notes.get_or_create_daily_note!(~D[2026-04-01])
+    april_third = Notes.get_or_create_daily_note!(~D[2026-04-03])
+    april_fourth = Notes.get_or_create_daily_note!(~D[2026-04-04])
+    april_tenth = Notes.get_or_create_daily_note!(~D[2026-04-10])
+    april_thirtieth = Notes.get_or_create_daily_note!(~D[2026-04-30])
+    {:ok, normal_note} = Notes.create_note(%{title: "Ignore normal notes"})
+
+    {:ok, _} =
+      Notes.update_note(april_first, %{
+        content_md: """
+        Planning
+        - [ ] Draft monthly goals
+        random text
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(april_third, %{
+        content_md: """
+        - [x] Finish kickoff
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(april_fourth, %{
+        content_md: """
+        - [ ] Review launch checklist
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(april_tenth, %{
+        content_md: """
+        - [x] Ship iteration one
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(april_thirtieth, %{
+        content_md: """
+        Notes only
+        - [] invalid checkbox
+        - [ ] Wrap up release
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(normal_note, %{
+        content_md: """
+        - [x] This should not appear
+        """
+      })
+
+    report = Notes.list_monthly_report_weeks(~D[2026-04-18])
+
+    assert report.month_start == ~D[2026-04-01]
+    assert report.month_end == ~D[2026-04-30]
+
+    assert report.weeks == [
+             %{
+               index: 1,
+               start_date: ~D[2026-04-01],
+               end_date: ~D[2026-04-03],
+               items: [
+                 %{
+                   note_date: ~D[2026-04-01],
+                   line_no: 2,
+                   text: "Draft monthly goals",
+                   is_done: false
+                 },
+                 %{note_date: ~D[2026-04-03], line_no: 1, text: "Finish kickoff", is_done: true}
+               ]
+             },
+             %{
+               index: 2,
+               start_date: ~D[2026-04-04],
+               end_date: ~D[2026-04-10],
+               items: [
+                 %{
+                   note_date: ~D[2026-04-04],
+                   line_no: 1,
+                   text: "Review launch checklist",
+                   is_done: false
+                 },
+                 %{
+                   note_date: ~D[2026-04-10],
+                   line_no: 1,
+                   text: "Ship iteration one",
+                   is_done: true
+                 }
+               ]
+             },
+             %{
+               index: 5,
+               start_date: ~D[2026-04-25],
+               end_date: ~D[2026-04-30],
+               items: [
+                 %{note_date: ~D[2026-04-30], line_no: 3, text: "Wrap up release", is_done: false}
+               ]
+             }
+           ]
+  end
+
+  test "list_monthly_report_weeks/1 treats friday as a one-day first week when month starts on friday" do
+    first_day = Notes.get_or_create_daily_note!(~D[2026-05-01])
+    second_day = Notes.get_or_create_daily_note!(~D[2026-05-02])
+    eighth_day = Notes.get_or_create_daily_note!(~D[2026-05-08])
+
+    {:ok, _} = Notes.update_note(first_day, %{content_md: "- [x] Close April"})
+    {:ok, _} = Notes.update_note(second_day, %{content_md: "- [ ] Start May sprint"})
+    {:ok, _} = Notes.update_note(eighth_day, %{content_md: "- [x] Demo sprint progress"})
+
+    report = Notes.list_monthly_report_weeks(~D[2026-05-15])
+
+    assert Enum.map(report.weeks, &{&1.index, &1.start_date, &1.end_date}) == [
+             {1, ~D[2026-05-01], ~D[2026-05-01]},
+             {2, ~D[2026-05-02], ~D[2026-05-08]}
+           ]
+  end
 end

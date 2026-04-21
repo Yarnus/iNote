@@ -9,6 +9,9 @@
     </div>
 
     <nav class="date-nav" aria-label={t(@locale, :sidebar_calendar)}>
+      <.link navigate={@monthly_report_path} class="pill-button pill-button--accent">
+        {t(@locale, :monthly_report)}
+      </.link>
       <.link
         navigate={~p"/daily/#{Date.to_iso8601(Date.add(@selected_date, -1))}"}
         class="pill-button"

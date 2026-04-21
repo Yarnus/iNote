@@ -168,6 +168,42 @@ defmodule INote.Notes do
     |> Repo.aggregate(:count, :id)
   end
 
+  def list_monthly_report_weeks(%Date{} = date) do
+    month_start = Date.beginning_of_month(date)
+    month_end = Date.end_of_month(date)
+
+    items =
+      NoteTodo
+      |> join(:inner, [todo], note in assoc(todo, :note))
+      |> where(
+        [todo, note],
+        note.kind == :daily and note.note_date >= ^month_start and note.note_date <= ^month_end
+      )
+      |> order_by([todo, note], asc: note.note_date, asc: todo.line_no, asc: todo.id)
+      |> select([todo, note], %{
+        note_date: note.note_date,
+        line_no: todo.line_no,
+        text: todo.text,
+        is_done: todo.is_done
+      })
+      |> Repo.all()
+
+    weeks =
+      month_week_ranges(month_start, month_end)
+      |> Enum.map(fn week ->
+        week_items =
+          Enum.filter(items, fn item ->
+            Date.compare(item.note_date, week.start_date) != :lt and
+              Date.compare(item.note_date, week.end_date) != :gt
+          end)
+
+        Map.put(week, :items, week_items)
+      end)
+      |> Enum.filter(&(&1.items != []))
+
+    %{month_start: month_start, month_end: month_end, weeks: weeks}
+  end
+
   def list_tags(query \\ "") do
     query = normalize_tag(query)
 
@@ -426,6 +462,42 @@ defmodule INote.Notes do
     |> List.flatten()
     |> Enum.take(10)
     |> Enum.map_join(" OR ", &"#{&1}*")
+  end
+
+  defp month_week_ranges(month_start, month_end) do
+    month_start
+    |> first_week_end()
+    |> min_date(month_end)
+    |> build_month_week_ranges(month_start, month_end, 1, [])
+    |> Enum.reverse()
+  end
+
+  defp build_month_week_ranges(current_end, start_date, month_end, index, acc) do
+    acc = [%{index: index, start_date: start_date, end_date: current_end} | acc]
+
+    if Date.compare(current_end, month_end) == :lt do
+      next_start = Date.add(current_end, 1)
+      next_end = next_start |> Date.add(6) |> min_date(month_end)
+      build_month_week_ranges(next_end, next_start, month_end, index + 1, acc)
+    else
+      acc
+    end
+  end
+
+  defp first_week_end(month_start) do
+    month_start
+    |> Date.day_of_week()
+    |> case do
+      day when day <= 5 -> Date.add(month_start, 5 - day)
+      day -> Date.add(month_start, 12 - day)
+    end
+  end
+
+  defp min_date(%Date{} = left, %Date{} = right) do
+    case Date.compare(left, right) do
+      :gt -> right
+      _ -> left
+    end
   end
 
   defp default_new_note_title do

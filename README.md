@@ -11,6 +11,7 @@ iNote is a small personal notes app for a single local user. It keeps the stack 
 - Typora-like markdown editing flow
 - Full-text search
 - TODO filtering from markdown checkboxes
+- Monthly report grouped by week from daily note tasks
 - Tag browsing from inline hashtags
 - Light and dark mode
 - Bilingual UI: English and Chinese
@@ -34,6 +35,7 @@ iNote is a small personal notes app for a single local user. It keeps the stack 
 - `/daily/:date` opens or creates a daily note
 - `/notes` lists general notes and creates a new one
 - `/notes/:id` opens a general note
+- `/reports/monthly/:month` shows a monthly report grouped by week
 - `/search` searches across notes
 - `/todos` filters checkbox items across notes
 - `/tags` browses notes by tag
@@ -81,18 +83,16 @@ make reset
 
 ## Release
 
-Build a production release:
+Build a production release on macOS:
 
 ```bash
-MIX_ENV=prod mix deps.get
-MIX_ENV=prod mix assets.deploy
-MIX_ENV=prod mix release
+make release
 ```
 
 The release tarball is generated at:
 
 ```bash
-_build/prod/rel/i_note/releases/0.1.0/i_note.tar.gz
+_build/prod/i_note-0.1.0.tar.gz
 ```
 
 After extracting it on the server, you can use:
@@ -103,6 +103,17 @@ bin/server
 ```
 
 `bin/server` starts Phoenix with `INOTE_SERVER=true`. `bin/migrate` runs all pending Ecto migrations inside the release.
+
+Publish the macOS release tarball to GitHub Releases:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+gh release create v0.1.0 _build/prod/i_note-0.1.0.tar.gz \
+  --title "iNote v0.1.0"
+```
+
+Adjust the version in the commands above to match `mix.exs`.
 
 ## Production Database
 
