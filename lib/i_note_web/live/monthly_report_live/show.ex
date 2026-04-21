@@ -75,8 +75,7 @@ defmodule INoteWeb.MonthlyReportLive.Show do
     )
   end
 
-  defp format_item(%{is_done: true, text: text}), do: "- [x] #{text}"
-  defp format_item(%{text: text}), do: "- [ ] #{text}"
+  defp format_item(%{text: text}), do: "- #{text}"
 
   defp report_title_line("zh", month_start),
     do: "#{Calendar.strftime(month_start, "%Y年%m月")}#{t("zh", :monthly_report_title)}"

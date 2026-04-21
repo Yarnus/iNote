@@ -108,6 +108,7 @@ defmodule INote.NotesTest do
     april_first = Notes.get_or_create_daily_note!(~D[2026-04-01])
     april_third = Notes.get_or_create_daily_note!(~D[2026-04-03])
     april_fourth = Notes.get_or_create_daily_note!(~D[2026-04-04])
+    april_sixth = Notes.get_or_create_daily_note!(~D[2026-04-06])
     april_tenth = Notes.get_or_create_daily_note!(~D[2026-04-10])
     april_thirtieth = Notes.get_or_create_daily_note!(~D[2026-04-30])
     {:ok, normal_note} = Notes.create_note(%{title: "Ignore normal notes"})
@@ -130,6 +131,13 @@ defmodule INote.NotesTest do
 
     {:ok, _} =
       Notes.update_note(april_fourth, %{
+        content_md: """
+        - [ ] Review launch checklist
+        """
+      })
+
+    {:ok, _} =
+      Notes.update_note(april_sixth, %{
         content_md: """
         - [ ] Review launch checklist
         """
@@ -180,11 +188,11 @@ defmodule INote.NotesTest do
              },
              %{
                index: 2,
-               start_date: ~D[2026-04-04],
+               start_date: ~D[2026-04-06],
                end_date: ~D[2026-04-10],
                items: [
                  %{
-                   note_date: ~D[2026-04-04],
+                   note_date: ~D[2026-04-06],
                    line_no: 1,
                    text: "Review launch checklist",
                    is_done: false
@@ -199,7 +207,7 @@ defmodule INote.NotesTest do
              },
              %{
                index: 5,
-               start_date: ~D[2026-04-25],
+               start_date: ~D[2026-04-27],
                end_date: ~D[2026-04-30],
                items: [
                  %{note_date: ~D[2026-04-30], line_no: 3, text: "Wrap up release", is_done: false}
@@ -221,7 +229,17 @@ defmodule INote.NotesTest do
 
     assert Enum.map(report.weeks, &{&1.index, &1.start_date, &1.end_date}) == [
              {1, ~D[2026-05-01], ~D[2026-05-01]},
-             {2, ~D[2026-05-02], ~D[2026-05-08]}
+             {2, ~D[2026-05-04], ~D[2026-05-08]}
+           ]
+
+    assert Enum.flat_map(report.weeks, & &1.items) == [
+             %{note_date: ~D[2026-05-01], line_no: 1, text: "Close April", is_done: true},
+             %{
+               note_date: ~D[2026-05-08],
+               line_no: 1,
+               text: "Demo sprint progress",
+               is_done: true
+             }
            ]
   end
 end

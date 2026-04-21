@@ -49,23 +49,6 @@ current_month = Date.utc_today() |> Date.beginning_of_month() %>
   </section>
 
   <section :if={@report_markdown != ""} class="panel report-panel">
-    <div class="report-weeks">
-      <article :for={week <- @report_weeks} class="report-week">
-        <h2 class="report-week__title">
-          {if @locale == "zh",
-            do:
-              "第#{week.index}周 (#{Calendar.strftime(week.start_date, "%m/%d")}-#{Calendar.strftime(week.end_date, "%m/%d")})",
-            else:
-              "Week #{week.index} (#{Calendar.strftime(week.start_date, "%m/%d")}-#{Calendar.strftime(week.end_date, "%m/%d")})"}
-        </h2>
-        <ul class="report-week__list">
-          <li :for={item <- week.items}>
-            <code>{if item.is_done, do: "[x]", else: "[ ]"}</code> {item.text}
-          </li>
-        </ul>
-      </article>
-    </div>
-
     <div class="report-output">
       <label class="field-label" for="monthly-report-output">
         {t(@locale, :monthly_report_title)}

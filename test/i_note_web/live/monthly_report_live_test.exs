@@ -14,7 +14,7 @@ defmodule INoteWeb.MonthlyReportLiveTest do
 
   test "monthly report page renders grouped task items", %{conn: conn} do
     first_day = Notes.get_or_create_daily_note!(~D[2026-04-01])
-    fourth_day = Notes.get_or_create_daily_note!(~D[2026-04-04])
+    eighth_day = Notes.get_or_create_daily_note!(~D[2026-04-08])
 
     {:ok, _} =
       Notes.update_note(first_day, %{
@@ -24,7 +24,7 @@ defmodule INoteWeb.MonthlyReportLiveTest do
       })
 
     {:ok, _} =
-      Notes.update_note(fourth_day, %{
+      Notes.update_note(eighth_day, %{
         content_md: """
         - [x] Ship first deliverable
         """
@@ -35,10 +35,14 @@ defmodule INoteWeb.MonthlyReportLiveTest do
     assert html =~ "Monthly report"
     assert html =~ "Week 1 (04/01-04/03)"
     assert html =~ "Draft milestone plan"
-    assert html =~ "Week 2 (04/04-04/10)"
-    assert html =~ "Ship first deliverable"
     assert html =~ "monthly-report-output"
     assert html =~ "Copy report"
+    assert html =~ "- Draft milestone plan"
+    assert html =~ "Week 2 (04/06-04/10)"
+    assert html =~ "- Ship first deliverable"
+    refute html =~ "[ ]"
+    refute html =~ "[x]"
+    refute html =~ "report-week__title"
   end
 
   test "monthly report page shows an empty state when the month has no tasks", %{conn: conn} do

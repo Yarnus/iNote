@@ -187,6 +187,7 @@ defmodule INote.Notes do
         is_done: todo.is_done
       })
       |> Repo.all()
+      |> Enum.filter(&(Date.day_of_week(&1.note_date) <= 5))
 
     weeks =
       month_week_ranges(month_start, month_end)
@@ -466,30 +467,50 @@ defmodule INote.Notes do
 
   defp month_week_ranges(month_start, month_end) do
     month_start
-    |> first_week_end()
-    |> min_date(month_end)
-    |> build_month_week_ranges(month_start, month_end, 1, [])
+    |> first_week_start()
+    |> build_month_week_ranges(month_end, 1, [])
     |> Enum.reverse()
   end
 
-  defp build_month_week_ranges(current_end, start_date, month_end, index, acc) do
-    acc = [%{index: index, start_date: start_date, end_date: current_end} | acc]
+  defp build_month_week_ranges(start_date, month_end, index, acc) do
+    cond do
+      Date.compare(start_date, month_end) == :gt ->
+        acc
 
-    if Date.compare(current_end, month_end) == :lt do
-      next_start = Date.add(current_end, 1)
-      next_end = next_start |> Date.add(6) |> min_date(month_end)
-      build_month_week_ranges(next_end, next_start, month_end, index + 1, acc)
-    else
-      acc
+      Date.day_of_week(start_date) > 5 ->
+        start_date
+        |> next_weekday()
+        |> build_month_week_ranges(month_end, index, acc)
+
+      true ->
+        end_date =
+          start_date
+          |> Date.add(5 - Date.day_of_week(start_date))
+          |> min_date(month_end)
+
+        next_start =
+          end_date
+          |> Date.add(1)
+          |> next_weekday()
+
+        acc = [%{index: index, start_date: start_date, end_date: end_date} | acc]
+        build_month_week_ranges(next_start, month_end, index + 1, acc)
     end
   end
 
-  defp first_week_end(month_start) do
-    month_start
-    |> Date.day_of_week()
-    |> case do
-      day when day <= 5 -> Date.add(month_start, 5 - day)
-      day -> Date.add(month_start, 12 - day)
+  defp first_week_start(month_start) do
+    if Date.day_of_week(month_start) <= 5 do
+      month_start
+    else
+      next_weekday(month_start)
+    end
+  end
+
+  defp next_weekday(date) do
+    case Date.day_of_week(date) do
+      6 -> Date.add(date, 2)
+      7 -> Date.add(date, 1)
+      _ -> date
     end
   end
 
