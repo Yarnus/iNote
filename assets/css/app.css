@@ -704,6 +704,14 @@ mark {
   padding-left: 1.5rem;
 }
 
+.inote-prosemirror ul {
+  list-style: disc;
+}
+
+.inote-prosemirror ol {
+  list-style: decimal;
+}
+
 .inote-prosemirror li {
   margin: 0.3rem 0;
 }
@@ -795,12 +803,12 @@ mark {
   margin-top: -0.08rem;
 }
 
-.pm-task-item__checkbox:checked {
+.pm-task-item__checkbox[data-checked="true"] {
   border-color: var(--md-checkbox-fill);
   background: var(--md-checkbox-fill);
 }
 
-.pm-task-item__checkbox:checked::before {
+.pm-task-item__checkbox[data-checked="true"]::before {
   transform: rotate(45deg) scale(1);
 }
 

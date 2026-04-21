@@ -36,6 +36,16 @@ test("typing - [ ] converts a new list item into an unchecked task", () => {
   assert.equal(item.firstChild.type.name, "paragraph")
 })
 
+test("typing - converts a new block into a bullet list item", () => {
+  const state = applyTextInput(createTestEditorState(""), "- ")
+  const list = state.doc.firstChild
+  const item = list.firstChild
+
+  assert.equal(list.type.name, "bullet_list")
+  assert.equal(item.type.name, "list_item")
+  assert.equal(item.firstChild.type.name, "paragraph")
+})
+
 test("typing - [x] converts a new list item into a checked task", () => {
   const state = applyTextInput(createTestEditorState(""), "- [x] ")
   const list = state.doc.firstChild

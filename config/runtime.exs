@@ -20,6 +20,8 @@ if System.get_env("INOTE_SERVER") do
   config :i_note, INoteWeb.Endpoint, server: true
 end
 
+loopback_hosts = ["127.0.0.1", "localhost"]
+
 if config_env() == :prod do
   database_path =
     System.get_env("INOTE_DATABASE_PATH") ||
@@ -46,9 +48,25 @@ if config_env() == :prod do
 
   host = System.get_env("INOTE_HOST") || "example.com"
   port = String.to_integer(System.get_env("INOTE_PORT") || "4000")
+  scheme = if host in loopback_hosts, do: "http", else: "https"
+
+  check_origin_hosts =
+    if host in loopback_hosts do
+      loopback_hosts
+    else
+      [host]
+    end
+
+  check_origin =
+    Enum.flat_map(check_origin_hosts, fn allowed_host ->
+      [
+        "#{scheme}://#{allowed_host}",
+        "#{scheme}://#{allowed_host}:#{port}"
+      ]
+    end)
 
   config :i_note, INoteWeb.Endpoint,
-    url: [host: host, port: 443, scheme: "https"],
+    url: [host: host, port: port, scheme: scheme],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
@@ -57,6 +75,7 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
+    check_origin: check_origin,
     secret_key_base: secret_key_base
 
   # ## SSL Support

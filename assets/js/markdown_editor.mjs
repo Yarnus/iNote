@@ -370,8 +370,11 @@ class TaskItemView {
     if (node.type !== this.node.type) return false
 
     this.node = node
-    this.checkbox.checked = Boolean(node.attrs.checked)
-    this.dom.dataset.checked = node.attrs.checked ? "true" : "false"
+    const checked = Boolean(node.attrs.checked)
+
+    this.checkbox.checked = checked
+    this.checkbox.dataset.checked = checked ? "true" : "false"
+    this.dom.dataset.checked = checked ? "true" : "false"
 
     return true
   }
