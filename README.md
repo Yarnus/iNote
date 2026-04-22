@@ -1,5 +1,9 @@
 # iNote
 
+[![Elixir](https://img.shields.io/badge/Elixir-1.18-6e4a7e?logo=elixir&logoColor=white)](https://elixir-lang.org/)
+[![Erlang](https://img.shields.io/badge/Erlang-OTP%2027-a90533?logo=erlang&logoColor=white)](https://www.erlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38bdf8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
 Local-first markdown notes for one person, built with Phoenix LiveView and SQLite.
 
 iNote is a small note app that keeps markdown as the source of truth and stays intentionally narrow: daily notes, general notes, fast search, task extraction, and monthly rollups. It is designed for local personal use, with a simple Phoenix + SQLite stack and no account, sync, or collaboration layer.
@@ -33,18 +37,6 @@ iNote is a small note app that keeps markdown as the source of truth and stays i
 - No sync or cloud features
 - No team collaboration
 - No scheduling or due-date subsystem
-
-## Pages
-
-- `/` redirects to today's daily note
-- `/daily/:date` opens or creates a daily note
-- `/notes` lists general notes and creates a new one
-- `/notes/:id` opens a general note
-- `/reports/monthly/:month` shows a monthly report grouped by week
-- `/search` searches across notes
-- `/todos` filters checkbox items across notes
-- `/tags` browses notes by tag
-- `/locale/:locale` switches UI language between `en` and `zh`
 
 ## Editor
 
@@ -90,63 +82,11 @@ make assets
 make reset
 ```
 
-## Release
+## Docs
 
-Build a production release on macOS:
+- [Usage guide](docs/usage.md)
+- [Release guide](docs/release.md)
+- [Deployment guide](docs/deployment.md)
+- [Architecture notes](docs/architecture.md)
 
-```bash
-make release
-```
-
-The release tarball is generated at:
-
-```bash
-_build/prod/i_note-0.1.0.tar.gz
-```
-
-After extracting it on the server, you can use:
-
-```bash
-bin/migrate
-bin/server
-```
-
-`bin/server` starts Phoenix with `INOTE_SERVER=true`. `bin/migrate` runs all pending Ecto migrations inside the release.
-
-Publish the macOS release tarball to GitHub Releases:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-gh release create v0.1.0 _build/prod/i_note-0.1.0.tar.gz \
-  --title "iNote v0.1.0"
-```
-
-Adjust the version in the commands above to match `mix.exs`.
-
-## Production Database
-
-`prod` uses SQLite and reads the database file path from `INOTE_DATABASE_PATH`.
-
-Example:
-
-```bash
-export INOTE_DATABASE_PATH=/var/lib/i_note/i_note.db
-export INOTE_SECRET_KEY_BASE="$(mix phx.gen.secret)"
-export INOTE_HOST=notes.example.com
-export INOTE_PORT=4000
-export INOTE_POOL_SIZE=5
-```
-
-Practical deployment notes:
-
-- `INOTE_DATABASE_PATH` should point to a persistent writable file on the server.
-- The parent directory must exist before the app starts, for example `/var/lib/i_note`.
-- Run `bin/migrate` once before the first `bin/server`.
-- If you put Phoenix behind Nginx or Caddy, keeping `INOTE_PORT=4000` is enough.
-
-## Notes
-
-- TODO and tag indexes are rebuilt on note save. This is intentional and keeps the implementation simple for local personal use.
-- SQLite FTS5 works well for local search, but Chinese tokenization is still basic.
-- The app intentionally prefers a small markdown command set over a larger rich-text toolbar.
+The README stays focused on product overview and local development. Release, deployment, and implementation notes live under `docs/`.
