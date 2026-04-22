@@ -8,13 +8,15 @@ import {
   serializeMarkdown
 } from "./markdown_editor.mjs"
 
-test("typing ###/####/##### converts the current block into heading levels 3-5", () => {
+test("typing ###/####/#####/###### converts the current block into heading levels 3-6", () => {
   const state = applyTextInput(createTestEditorState(""), "### ")
   const stateH4 = applyTextInput(createTestEditorState(""), "#### ")
   const stateH5 = applyTextInput(createTestEditorState(""), "##### ")
+  const stateH6 = applyTextInput(createTestEditorState(""), "###### ")
   const block = state.doc.firstChild
   const blockH4 = stateH4.doc.firstChild
   const blockH5 = stateH5.doc.firstChild
+  const blockH6 = stateH6.doc.firstChild
 
   assert.equal(block.type.name, "heading")
   assert.equal(block.attrs.level, 3)
@@ -23,6 +25,8 @@ test("typing ###/####/##### converts the current block into heading levels 3-5",
   assert.equal(blockH4.attrs.level, 4)
   assert.equal(blockH5.type.name, "heading")
   assert.equal(blockH5.attrs.level, 5)
+  assert.equal(blockH6.type.name, "heading")
+  assert.equal(blockH6.attrs.level, 6)
 })
 
 test("typing - [ ] converts a new list item into an unchecked task", () => {
@@ -87,6 +91,16 @@ test("typing `test` converts inline markdown to code mark", () => {
   assert.equal(textNode.marks[0].type.name, "code")
 })
 
+test("parsing inline code markdown preserves the code mark", () => {
+  const doc = parseMarkdown("Use `code` here")
+  const paragraph = doc.firstChild
+  const codeNode = paragraph.child(1)
+
+  assert.equal(paragraph.textContent, "Use code here")
+  assert.equal(codeNode.text, "code")
+  assert.equal(codeNode.marks[0].type.name, "code")
+})
+
 test("markdown parsing and serialization preserve task list markdown", () => {
   const markdown = "### Title\n\n- [ ] Draft spec\n- [x] Ship demo"
   const doc = parseMarkdown(markdown)
@@ -98,6 +112,18 @@ test("markdown parsing and serialization preserve task list markdown", () => {
   assert.match(serialized, /^- \[ \] Draft spec$/m)
   assert.match(serialized, /^- \[x\] Ship demo$/m)
   assert.doesNotMatch(serialized, /<\w+/)
+})
+
+test("code fence language survives markdown parsing and serialization", () => {
+  const markdown = "```elixir\nIO.puts(:ok)\n```"
+  const doc = parseMarkdown(markdown)
+  const codeBlock = doc.firstChild
+  const serialized = serializeMarkdown(doc)
+
+  assert.equal(codeBlock.type.name, "code_block")
+  assert.equal(codeBlock.attrs.language, "elixir")
+  assert.match(serialized, /^```elixir$/m)
+  assert.match(serialized, /^IO\.puts\(:ok\)$/m)
 })
 
 test("creating a fresh editor state uses the provided markdown only", () => {

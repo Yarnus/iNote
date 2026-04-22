@@ -5,6 +5,7 @@ import topbar from "../vendor/topbar"
 import {createMarkdownEditor} from "./markdown_editor.mjs"
 
 const THEME_KEY = "inote:theme"
+const EDITOR_MODE_KEY = "inote:editor-mode"
 
 const resolveTheme = mode => {
   if (mode === "dark" || mode === "light") return mode
@@ -72,7 +73,11 @@ const MarkdownEditor = {
   mounted() {
     this.noteId = this.el.dataset.noteId
     this.editorRoot = this.el.querySelector("[data-markdown-editor]")
+    this.sourceRoot = this.el.querySelector("[data-markdown-source]")
+    this.modeButtons = [...this.el.querySelectorAll("[data-editor-mode-trigger]")]
     this.isSyncing = false
+    this.currentMarkdown = this.el.dataset.contentMd || ""
+    this.mode = this.restoreMode()
 
     this.saveDraft = debounce(contentMd => {
       this.pushEvent("autosave_note", {
@@ -83,28 +88,58 @@ const MarkdownEditor = {
 
     this.editor = createMarkdownEditor({
       element: this.editorRoot,
-      markdown: this.el.dataset.contentMd || "",
+      markdown: this.currentMarkdown,
       placeholder: this.el.dataset.placeholder || "",
       onChange: markdown => {
         if (this.isSyncing) return
 
+        this.currentMarkdown = markdown
+        this.syncSourceInput(markdown)
         this.pushEvent("set_status_idle", {})
         this.saveDraft(markdown)
       }
     })
+
+    this.onModeClick = event => {
+      const trigger = event.target.closest("[data-editor-mode-trigger]")
+      if (!trigger) return
+
+      this.setMode(trigger.dataset.editorModeTrigger, {focus: true})
+    }
+
+    this.onSourceInput = event => {
+      if (this.isSyncing) return
+
+      this.currentMarkdown = event.target.value
+      this.pushEvent("set_status_idle", {})
+      this.saveDraft(this.currentMarkdown)
+    }
+
+    this.el.addEventListener("click", this.onModeClick)
+    this.sourceRoot?.addEventListener("input", this.onSourceInput)
+    this.syncSourceInput(this.currentMarkdown)
+    this.applyMode({focus: false})
   },
 
   updated() {
     const nextId = this.el.dataset.noteId
+    const nextMarkdown = this.el.dataset.contentMd || ""
 
     if (nextId !== this.noteId) {
       this.noteId = nextId
+      this.syncFromDataset()
+      return
+    }
+
+    if (!this.isSyncing && nextMarkdown !== this.currentMarkdown) {
       this.syncFromDataset()
     }
   },
 
   destroyed() {
     this.saveDraft.cancel?.()
+    this.el.removeEventListener("click", this.onModeClick)
+    this.sourceRoot?.removeEventListener("input", this.onSourceInput)
     this.editor.destroy()
   },
 
@@ -113,9 +148,70 @@ const MarkdownEditor = {
 
     this.saveDraft.cancel?.()
     this.isSyncing = true
+    this.currentMarkdown = markdown
+    this.syncSourceInput(markdown)
     this.editor.setMarkdown(markdown)
-    this.editor.focusStart()
+    this.applyMode({focus: false})
     this.isSyncing = false
+  },
+
+  restoreMode() {
+    const storedMode = window.localStorage.getItem(EDITOR_MODE_KEY)
+    return storedMode === "source" ? "source" : "rich"
+  },
+
+  persistMode() {
+    window.localStorage.setItem(EDITOR_MODE_KEY, this.mode)
+  },
+
+  syncSourceInput(markdown) {
+    if (this.sourceRoot) {
+      this.sourceRoot.value = markdown
+    }
+  },
+
+  setMode(mode, {focus = false} = {}) {
+    if (mode !== "rich" && mode !== "source") return
+    if (mode === this.mode) return
+
+    if (mode === "rich") {
+      this.currentMarkdown = this.sourceRoot?.value || ""
+      this.isSyncing = true
+      this.editor.setMarkdown(this.currentMarkdown)
+      this.isSyncing = false
+    } else {
+      this.currentMarkdown = this.editor.getMarkdown()
+      this.syncSourceInput(this.currentMarkdown)
+    }
+
+    this.mode = mode
+    this.persistMode()
+    this.applyMode({focus})
+  },
+
+  applyMode({focus = false} = {}) {
+    this.el.dataset.editorMode = this.mode
+
+    this.modeButtons.forEach(button => {
+      const active = button.dataset.editorModeTrigger === this.mode
+      button.classList.toggle("is-active", active)
+      button.setAttribute("aria-pressed", active ? "true" : "false")
+    })
+
+    if (this.sourceRoot) {
+      this.sourceRoot.hidden = this.mode !== "source"
+    }
+
+    this.editorRoot.hidden = this.mode !== "rich"
+
+    if (!focus) return
+
+    if (this.mode === "source") {
+      this.sourceRoot?.focus()
+      return
+    }
+
+    this.editor.focusStart()
   }
 }
 

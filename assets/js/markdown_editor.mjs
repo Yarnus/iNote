@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it"
+import hljs from "highlight.js/lib/common"
 import {
   baseKeymap,
   chainCommands,
@@ -17,13 +18,54 @@ import {MarkdownParser, MarkdownSerializer, defaultMarkdownSerializer} from "pro
 import {Schema} from "prosemirror-model"
 import {schema as basicSchema} from "prosemirror-schema-basic"
 import {addListNodes, liftListItem, splitListItemKeepMarks} from "prosemirror-schema-list"
-import {EditorState, Selection} from "prosemirror-state"
-import {EditorView} from "prosemirror-view"
+import {EditorState, Plugin, PluginKey, Selection} from "prosemirror-state"
+import {Decoration, DecorationSet, EditorView} from "prosemirror-view"
 
 const TASK_MARKER_PATTERN = /^\[( |x|X)\](?:\s+|$)/
 const MAX_MATCH = 500
 
-const listNodes = addListNodes(basicSchema.spec.nodes, "paragraph block*", "block")
+const listNodes = addListNodes(basicSchema.spec.nodes, "paragraph block*", "block").update("code_block", {
+  content: "text*",
+  marks: "",
+  group: "block",
+  code: true,
+  defining: true,
+  attrs: {
+    language: {default: ""}
+  },
+  parseDOM: [
+    {
+      tag: "pre",
+      preserveWhitespace: "full",
+      getAttrs: dom => ({
+        language:
+          dom.getAttribute("data-language") ||
+          dom.querySelector("code")?.dataset.language ||
+          ""
+      })
+    }
+  ],
+  toDOM(node) {
+    const language = normalizeCodeLanguage(node.attrs.language)
+
+    return [
+      "pre",
+      {
+        "data-language": language
+      },
+      [
+        "code",
+        {
+          "data-language": language,
+          class: language ? `language-${language}` : null
+        },
+        0
+      ]
+    ]
+  }
+})
+
+const highlightPluginKey = new PluginKey("codeSyntaxHighlight")
 
 export const editorSchema = new Schema({
   nodes: listNodes.append({
@@ -72,7 +114,11 @@ const markdownParser = new MarkdownParser(editorSchema, MarkdownIt("commonmark",
   },
   heading: {block: "heading", getAttrs: token => ({level: Number(token.tag.slice(1))})},
   code_block: {block: "code_block", noCloseToken: true},
-  fence: {block: "code_block", getAttrs: token => ({params: token.info || ""}), noCloseToken: true},
+  fence: {
+    block: "code_block",
+    getAttrs: token => ({language: extractCodeLanguage(token.info)}),
+    noCloseToken: true
+  },
   hr: {node: "horizontal_rule"},
   image: {
     node: "image",
@@ -172,6 +218,14 @@ function normalizeTaskLists(node) {
   }
 }
 
+function extractCodeLanguage(info) {
+  return normalizeCodeLanguage(info?.trim().split(/\s+/, 1)[0] || "")
+}
+
+function normalizeCodeLanguage(language) {
+  return typeof language === "string" ? language.trim().toLowerCase() : ""
+}
+
 export function parseMarkdown(markdown) {
   const parsed = markdownParser.parse(markdown || "")
   return editorSchema.nodeFromJSON(normalizeTaskLists(parsed.toJSON()))
@@ -249,7 +303,7 @@ function buildListInputRules(schema) {
     schema.nodes
 
   return [
-    textblockTypeInputRule(/^(#{1,5})\s$/, heading, match => ({level: match[1].length})),
+    textblockTypeInputRule(/^(#{1,6})\s$/, heading, match => ({level: match[1].length})),
     wrappingInputRule(/^>\s$/, blockquote),
     buildTaskListInputRule(schema),
     buildInlineCodeInputRule(schema),
@@ -258,6 +312,18 @@ function buildListInputRules(schema) {
     textblockTypeInputRule(/^```$/, codeBlock)
   ]
 }
+
+function serializeCodeBlock(state, node) {
+  const language = normalizeCodeLanguage(node.attrs.language)
+  state.write(`\`\`\`${language}`)
+  state.ensureNewLine()
+  state.text(node.textContent, false)
+  state.ensureNewLine()
+  state.write("```")
+  state.closeBlock(node)
+}
+
+markdownSerializer.nodes.code_block = serializeCodeBlock
 
 const editorInputRules = buildListInputRules(editorSchema)
 
@@ -305,8 +371,112 @@ const editorPlugins = [
   history(),
   inputRules({rules: editorInputRules}),
   buildKeymap(editorSchema),
+  new Plugin({
+    key: highlightPluginKey,
+    state: {
+      init(_, {doc}) {
+        return buildCodeBlockDecorations(doc)
+      },
+      apply(transaction, decorationSet, _oldState, newState) {
+        return transaction.docChanged ? buildCodeBlockDecorations(newState.doc) : decorationSet
+      }
+    },
+    props: {
+      decorations(state) {
+        return highlightPluginKey.getState(state)
+      }
+    }
+  }),
   keymap(baseKeymap)
 ]
+
+function buildCodeBlockDecorations(doc) {
+  if (typeof DOMParser === "undefined") {
+    return DecorationSet.empty
+  }
+
+  const decorations = []
+
+  doc.descendants((node, pos) => {
+    if (node.type !== editorSchema.nodes.code_block || node.textContent === "") return
+
+    const offset = pos + 1
+    const tokens = tokenizeHighlightedCode(node.textContent, node.attrs.language)
+
+    for (const token of tokens) {
+      if (!token.className || token.from === token.to) continue
+
+      decorations.push(
+        Decoration.inline(offset + token.from, offset + token.to, {
+          class: token.className
+        })
+      )
+    }
+  })
+
+  return decorations.length === 0 ? DecorationSet.empty : DecorationSet.create(doc, decorations)
+}
+
+function tokenizeHighlightedCode(text, language) {
+  const highlighted = highlightCode(text, language)
+
+  if (!highlighted?.value) return []
+
+  const parser = new DOMParser()
+  const document = parser.parseFromString(`<body>${highlighted.value}</body>`, "text/html")
+  const root = document.body
+  const tokens = []
+  let offset = 0
+
+  collectHighlightTokens(root, [], tokens, text, value => {
+    offset += value.length
+    return offset
+  })
+
+  return tokens
+}
+
+function collectHighlightTokens(node, classes, tokens, sourceText, advanceOffset) {
+  for (const child of node.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const text = child.textContent || ""
+      const start = advanceOffset("")
+      const end = start + text.length
+
+      if (classes.length > 0 && sourceText.slice(start, end) === text) {
+        tokens.push({from: start, to: end, className: classes.join(" ")})
+      }
+
+      advanceOffset(text)
+      continue
+    }
+
+    if (child.nodeType !== Node.ELEMENT_NODE) continue
+
+    const nextClasses = child.className
+      ? [...classes, ...child.className.split(/\s+/).filter(Boolean)]
+      : classes
+
+    collectHighlightTokens(child, nextClasses, tokens, sourceText, advanceOffset)
+  }
+}
+
+function highlightCode(text, language) {
+  const normalizedLanguage = normalizeCodeLanguage(language)
+
+  try {
+    if (normalizedLanguage && hljs.getLanguage(normalizedLanguage)) {
+      return hljs.highlight(text, {
+        language: normalizedLanguage,
+        ignoreIllegals: true
+      })
+    }
+
+    return hljs.highlightAuto(text)
+  } catch (_error) {
+    return null
+  }
+}
 
 function createEditorState(markdown) {
   return EditorState.create({

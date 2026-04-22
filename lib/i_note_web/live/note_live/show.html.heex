@@ -41,7 +41,32 @@
       data-content-md={@note.content_md}
       data-placeholder={t(@locale, :editor_placeholder)}
     >
+      <div class="editor-shell__toolbar" role="toolbar" aria-label={t(@locale, :editor_mode_switcher)}>
+        <button
+          type="button"
+          class="editor-mode-toggle is-active"
+          data-editor-mode-trigger="rich"
+          aria-pressed="true"
+        >
+          {t(@locale, :editor_mode_write)}
+        </button>
+        <button
+          type="button"
+          class="editor-mode-toggle"
+          data-editor-mode-trigger="source"
+          aria-pressed="false"
+        >
+          {t(@locale, :editor_mode_source)}
+        </button>
+      </div>
       <div class="markdown-editor" data-markdown-editor></div>
+      <textarea
+        class="editor-source"
+        data-markdown-source
+        placeholder={t(@locale, :editor_placeholder)}
+        spellcheck="false"
+        hidden
+      ></textarea>
     </div>
   </section>
 </section>

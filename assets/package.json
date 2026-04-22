@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.1",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-history": "^1.5.0",
