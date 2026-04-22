@@ -1,14 +1,19 @@
 # iNote
 
-Local-first markdown notes built with Phoenix LiveView and SQLite.
+Local-first markdown notes for one person, built with Phoenix LiveView and SQLite.
 
-iNote is a small personal notes app for a single local user. It keeps the stack simple, stores markdown as the source of truth, and focuses on fast note-taking instead of workspace features.
+iNote is a small note app that keeps markdown as the source of truth and stays intentionally narrow: daily notes, general notes, fast search, task extraction, and monthly rollups. It is designed for local personal use, with a simple Phoenix + SQLite stack and no account, sync, or collaboration layer.
+
+![iNote screenshot](preview.png)
 
 ## Highlights
 
 - Daily notes by date
 - General notes with custom titles
 - Typora-like markdown editing flow
+- Write/source mode toggle
+- Inline code and fenced code block support
+- Syntax highlighting for code fences
 - Full-text search
 - TODO filtering from markdown checkboxes
 - Monthly report grouped by week from daily note tasks
@@ -45,12 +50,14 @@ iNote is a small personal notes app for a single local user. It keeps the stack 
 
 The editor uses markdown as the persisted format and supports a compact Typora-style writing flow:
 
-- `# `, `## `, `### ` for headings
+- `# ` through `###### ` for headings
 - `- `, `1. `, `> ` for lists and blockquotes
 - `- [ ] ` and `- [x] ` for task items
+- `` `inline code` `` and fenced code blocks with language labels
+- Toggle between rich writing mode and raw markdown source mode
 - Autosave while typing
 
-This keeps storage and indexing simple while still feeling close to a rich editor.
+This keeps storage and indexing simple while still feeling close to a rich editor when you write.
 
 ## Quick Start
 
