@@ -79,13 +79,21 @@ const isModeToggleShortcut = event =>
   !event.altKey &&
   (event.code === "Slash" || event.key === "/")
 
+const focusVisibleSearchInput = () => {
+  const searchInputs = [...document.querySelectorAll("[data-global-search]")]
+  const visibleInput = searchInputs.find(input => !input.hidden && input.offsetParent !== null)
+
+  if (!visibleInput || document.activeElement === visibleInput) return false
+
+  visibleInput.focus()
+  visibleInput.select?.()
+  return true
+}
+
 const focusGlobalSearch = () => {
-  const searchInput = document.getElementById("global-search")
+  if (focusVisibleSearchInput()) return true
 
-  if (!searchInput || document.activeElement === searchInput) return false
-
-  searchInput.focus()
-  searchInput.select?.()
+  window.dispatchEvent(new CustomEvent("inote:open-nav", {detail: {focusSearch: true}}))
   return true
 }
 
@@ -95,6 +103,121 @@ document.addEventListener("keydown", event => {
 
   event.preventDefault()
 })
+
+const ResponsiveNav = {
+  mounted() {
+    this.drawer = this.el.querySelector("[data-nav-drawer]")
+    this.backdrop = this.el.querySelector("[data-nav-backdrop]")
+    this.toggle = this.el.querySelector("[data-nav-toggle]")
+    this.isOpen = false
+
+    this.onClick = event => {
+      const toggle = event.target.closest("[data-nav-toggle]")
+      if (toggle) {
+        event.preventDefault()
+        this.open()
+        return
+      }
+
+      const close = event.target.closest("[data-nav-close]")
+      if (close) {
+        event.preventDefault()
+        this.close()
+        return
+      }
+
+      const backdrop = event.target.closest("[data-nav-backdrop]")
+      if (backdrop) {
+        this.close()
+      }
+    }
+
+    this.onKeydown = event => {
+      if (event.key !== "Escape" || !this.isOpen) return
+
+      event.preventDefault()
+      this.close()
+    }
+
+    this.onWindowOpenNav = event => {
+      const focusSearch = Boolean(event.detail?.focusSearch)
+      this.open({focusSearch})
+    }
+
+    this.onDrawerClick = event => {
+      const target = event.target.closest("a")
+      if (!target) return
+
+      this.close({restoreFocus: false})
+    }
+
+    this.onViewportChange = () => {
+      if (!window.matchMedia("(max-width: 1100px)").matches) {
+        this.close({restoreFocus: false})
+      }
+    }
+
+    this.onPageLoadingStart = () => this.close({restoreFocus: false})
+
+    this.el.addEventListener("click", this.onClick)
+    this.drawer?.addEventListener("click", this.onDrawerClick)
+    window.addEventListener("keydown", this.onKeydown)
+    window.addEventListener("inote:open-nav", this.onWindowOpenNav)
+    window.matchMedia("(max-width: 1100px)").addEventListener("change", this.onViewportChange)
+    window.addEventListener("phx:page-loading-start", this.onPageLoadingStart)
+  },
+
+  destroyed() {
+    this.el.removeEventListener("click", this.onClick)
+    this.drawer?.removeEventListener("click", this.onDrawerClick)
+    window.removeEventListener("keydown", this.onKeydown)
+    window.removeEventListener("inote:open-nav", this.onWindowOpenNav)
+    window.matchMedia("(max-width: 1100px)").removeEventListener("change", this.onViewportChange)
+    window.removeEventListener("phx:page-loading-start", this.onPageLoadingStart)
+    document.body.classList.remove("is-nav-open")
+  },
+
+  open({focusSearch = false} = {}) {
+    if (!this.drawer || !this.backdrop || this.isOpen) {
+      if (focusSearch) {
+        window.requestAnimationFrame(() => focusVisibleSearchInput())
+      }
+      return
+    }
+
+    this.isOpen = true
+    this.drawer.hidden = false
+    this.backdrop.hidden = false
+    this.el.dataset.navOpen = "true"
+    this.toggle?.setAttribute("aria-expanded", "true")
+    document.body.classList.add("is-nav-open")
+
+    window.requestAnimationFrame(() => {
+      const closeButton = this.el.querySelector("[data-nav-close]")
+
+      if (focusSearch) {
+        focusVisibleSearchInput()
+      } else {
+        closeButton?.focus()
+      }
+    })
+  },
+
+  close({restoreFocus = true} = {}) {
+    if (!this.drawer || !this.backdrop || !this.isOpen) return
+
+    this.isOpen = false
+    this.drawer.hidden = true
+    this.backdrop.hidden = true
+    delete this.el.dataset.navOpen
+    this.toggle?.setAttribute("aria-expanded", "false")
+    document.body.classList.remove("is-nav-open")
+
+    if (restoreFocus) {
+      this.toggle?.focus()
+    }
+  }
+}
 
 const MarkdownEditor = {
   mounted() {
@@ -306,7 +429,7 @@ const copyText = async (text, target) => {
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 let liveSocket = new LiveSocket("/live", Socket, {
-  hooks: {CopyButton, MarkdownEditor},
+  hooks: {CopyButton, MarkdownEditor, ResponsiveNav},
   params: {_csrf_token: csrfToken}
 })
 

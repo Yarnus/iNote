@@ -110,6 +110,10 @@ body.app-body {
     var(--bg);
 }
 
+body.app-body.is-nav-open {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -147,11 +151,57 @@ mark {
   gap: 1rem;
 }
 
+.app-sidebar--drawer,
+.app-drawer-backdrop,
+.app-main__mobile-bar {
+  display: none;
+}
+
+.app-sidebar--drawer[hidden],
+.app-drawer-backdrop[hidden] {
+  display: none !important;
+}
+
 .app-main {
   padding: 1.4rem;
   display: grid;
   align-content: start;
   gap: 1rem;
+}
+
+.app-main__nav-toggle,
+.app-drawer__close {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 26%, transparent);
+  text-underline-offset: 0.18rem;
+}
+
+.app-main__nav-toggle {
+  padding: 0;
+  font-weight: 600;
+}
+
+.app-drawer__header {
+  display: none;
+}
+
+.app-drawer__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+}
+
+.app-drawer__close {
+  width: auto;
+  height: auto;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
 }
 
 .brand-card,
@@ -230,17 +280,20 @@ mark {
 }
 
 .calendar-arrow {
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  height: 26px;
-  display: grid;
+  border: none;
+  background: transparent;
+  height: auto;
+  display: inline-grid;
   place-items: center;
   color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 26%, transparent);
+  text-underline-offset: 0.16rem;
 }
 
 .calendar-arrow:hover {
   color: var(--text);
-  border-color: var(--border-strong);
+  text-decoration-color: color-mix(in srgb, var(--text) 32%, transparent);
 }
 
 .mini-calendar__weekdays {
@@ -339,14 +392,16 @@ mark {
 
 .theme-toggle {
   width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 0.5rem 0.68rem;
+  border: none;
+  background: transparent;
+  padding: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--text);
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 26%, transparent);
+  text-underline-offset: 0.18rem;
 }
 
 .locale-switcher {
@@ -363,16 +418,18 @@ mark {
 }
 
 .locale-switcher__item {
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  padding: 0.28rem 0.6rem;
+  border: none;
+  padding: 0;
   color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 24%, transparent);
+  text-underline-offset: 0.16rem;
 }
 
 .locale-switcher__item.is-active {
   color: var(--text);
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: transparent;
+  text-decoration-color: color-mix(in srgb, var(--text) 30%, transparent);
 }
 
 .main-page {
@@ -391,6 +448,9 @@ mark {
   width: min(100%, 900px);
   margin: 0 auto;
   align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
 .main-page__eyebrow {
@@ -520,29 +580,33 @@ mark {
 
 .pill-button,
 .filter-pill {
-  border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 84%, var(--editor-surface));
   color: var(--text);
-  padding: 0.45rem 0.8rem;
+  padding: 0.45rem 0.82rem;
+  font-weight: 600;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .pill-button:hover,
 .filter-pill:hover,
 .filter-pill.is-active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--surface));
 }
 
 .pill-button--accent {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--surface));
 }
 
 .date-nav {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  width: min(100%, 900px);
 }
 
 .filter-row {
@@ -636,6 +700,7 @@ mark {
   display: flex;
   gap: 0.45rem;
   align-items: center;
+  justify-content: center;
 }
 
 .editor-mode-toggle {
@@ -648,6 +713,7 @@ mark {
   font-size: 0.92rem;
   font-weight: 600;
   transition: 140ms ease;
+  text-decoration: none;
 }
 
 .editor-mode-toggle:hover {
@@ -1098,11 +1164,87 @@ mark {
     grid-template-columns: 1fr;
   }
 
-  .app-sidebar {
-    position: static;
+  .app-sidebar--desktop {
+    display: none;
+  }
+
+  .app-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 33, 39, 0.26);
+    backdrop-filter: blur(2px);
+    z-index: 39;
+  }
+
+  .app-sidebar--drawer {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(22rem, calc(100vw - 2rem));
+    height: 100vh;
+    height: 100dvh;
+    border-right: 1px solid var(--border);
+    z-index: 40;
+    overflow-y: auto;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
+  }
+
+  .app-main {
+    padding-top: 0.85rem;
+    gap: 0.8rem;
+  }
+
+  .app-main__mobile-bar {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .app-main__nav-toggle {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--text-muted) 32%, transparent);
+    text-underline-offset: 0.18rem;
+  }
+
+  .app-main__nav-toggle:hover {
+    color: var(--text);
+    text-decoration-color: color-mix(in srgb, var(--text) 32%, transparent);
+  }
+
+  .app-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.2rem;
+  }
+
+  .app-drawer__title {
+    font-size: 0.84rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .app-drawer__close {
+    width: auto;
     height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--text-muted) 28%, transparent);
+    text-underline-offset: 0.18rem;
   }
 
   .split-grid {
@@ -1112,23 +1254,77 @@ mark {
   .main-page__header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.55rem;
   }
 
   .main-page__header--editor {
     width: 100%;
+    gap: 0.55rem;
   }
 
-
   .date-nav {
+    width: 100%;
+    gap: 0.35rem 0.8rem;
     flex-wrap: wrap;
   }
 
+  .date-nav .pill-button {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+    text-underline-offset: 0.18rem;
+  }
+
+  .date-nav .pill-button:hover,
+  .date-nav .pill-button--accent {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    text-decoration-color: color-mix(in srgb, var(--text) 34%, transparent);
+  }
+
   .editor-panel {
-    padding: 1rem;
+    padding: 0.65rem 1rem 1rem;
+  }
+
+  .editor-shell {
+    gap: 0.55rem;
   }
 
   .text-input--title {
     font-size: clamp(1.65rem, 9vw, 2.2rem);
+  }
+
+  .editor-shell__toolbar {
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .editor-mode-toggle {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--text-muted) 26%, transparent);
+    text-underline-offset: 0.18rem;
+  }
+
+  .editor-mode-toggle:hover,
+  .editor-mode-toggle.is-active {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    text-decoration-color: color-mix(in srgb, var(--text) 34%, transparent);
   }
 }
 
@@ -1146,6 +1342,15 @@ mark {
 }
 
 @media (max-width: 720px) {
+  .app-main {
+    padding: 0.9rem;
+  }
+
+  .app-sidebar--drawer {
+    width: min(24rem, calc(100vw - 1rem));
+    padding: 1rem;
+  }
+
   .editor-shell {
     padding: 0.7rem;
     border-radius: 18px;
@@ -1159,7 +1364,27 @@ mark {
   .note-header__meta-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.35rem;
+    gap: 0.22rem;
+  }
+
+  .main-page__title {
+    margin-top: 0.08rem;
+    font-size: clamp(1.2rem, 8vw, 1.8rem);
+  }
+
+  .main-page__subtitle {
+    margin-top: 0.22rem;
+  }
+
+  .note-header__title-form {
+    margin-top: 0.15rem;
+  }
+
+  .note-header__delete,
+  .date-nav .pill-button,
+  .app-main__nav-toggle,
+  .editor-mode-toggle {
+    font-size: 0.92rem;
   }
 
   .markdown-editor {

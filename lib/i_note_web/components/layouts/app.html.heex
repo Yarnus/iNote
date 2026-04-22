@@ -1,14 +1,16 @@
-<% locale = assigns[:locale] || "en"
+<%
+locale = assigns[:locale] || "en"
 selected_date = assigns[:selected_date] || Date.utc_today()
 month_start = Date.beginning_of_month(selected_date)
 previous_month = month_start |> Date.add(-1) |> Date.beginning_of_month()
 next_month = month_start |> Date.add(32) |> Date.beginning_of_month()
 note_dates = assigns[:calendar_note_dates] || []
 current_path = assigns[:current_path] || ~p"/daily/#{Date.to_iso8601(selected_date)}"
-current_section = assigns[:current_section] || :daily %>
+current_section = assigns[:current_section] || :daily
+%>
 
-<div class="app-shell">
-  <aside class="app-sidebar">
+<div id="app-shell" class="app-shell" phx-hook="ResponsiveNav">
+  <aside class="app-sidebar app-sidebar--desktop">
     <a href={~p"/daily/#{Date.to_iso8601(Date.utc_today())}"} class="brand-card">
       <span class="brand-card__title">{t(locale, :app_name)}</span>
       <span class="brand-card__copy">{t(locale, :app_subtitle)}</span>
@@ -47,18 +49,150 @@ current_section = assigns[:current_section] || :daily %>
     </section>
 
     <form action={~p"/search"} method="get" class="sidebar-search">
-      <label class="field-label" for="global-search">{t(locale, :search)}</label>
+      <label class="field-label" for="global-search-desktop">{t(locale, :search)}</label>
       <input
-        id="global-search"
+        id="global-search-desktop"
         class="text-input"
         type="search"
         name="q"
         value={assigns[:search_query] || ""}
         placeholder={t(locale, :search_placeholder)}
+        data-global-search
       />
     </form>
 
-    <nav class="sidebar-nav" aria-label="Primary">
+    <nav class="sidebar-nav" aria-label={t(locale, :navigation)}>
+      <a
+        href={~p"/daily/#{Date.to_iso8601(Date.utc_today())}"}
+        class={nav_item_class(current_section, :daily)}
+      >
+        {t(locale, :daily_notes)}
+      </a>
+      <a href={~p"/notes"} class={nav_item_class(current_section, :notes)}>
+        {t(locale, :notes)}
+      </a>
+      <a href={~p"/search"} class={nav_item_class(current_section, :search)}>
+        {t(locale, :search)}
+      </a>
+      <a href={~p"/todos"} class={nav_item_class(current_section, :todos)}>{t(locale, :todos)}</a>
+      <a href={~p"/tags"} class={nav_item_class(current_section, :tags)}>{t(locale, :tags)}</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <details class="settings-menu">
+        <summary class="settings-menu__toggle">
+          <span>{t(locale, :settings)}</span>
+          <span class="settings-menu__caret">⌄</span>
+        </summary>
+
+        <div class="settings-menu__panel">
+          <button
+            type="button"
+            class="theme-toggle"
+            data-theme-toggle
+            data-theme-label-system={t(locale, :theme_system)}
+            data-theme-label-dark={t(locale, :theme_dark)}
+            data-theme-label-light={t(locale, :theme_light)}
+          >
+            <span>{t(locale, :dark_mode)}</span>
+            <span data-theme-label>{t(locale, :theme_system)}</span>
+          </button>
+
+          <div class="locale-switcher">
+            <span>{t(locale, :language)}</span>
+            <div class="locale-switcher__list">
+              <a
+                href={~p"/locale/en?#{[to: current_path]}"}
+                class={locale_item_class(locale, "en")}
+              >
+                EN
+              </a>
+              <a
+                href={~p"/locale/zh?#{[to: current_path]}"}
+                class={locale_item_class(locale, "zh")}
+              >
+                中文
+              </a>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </aside>
+
+  <div class="app-drawer-backdrop" data-nav-backdrop hidden></div>
+
+  <aside
+    id="app-drawer"
+    class="app-sidebar app-sidebar--drawer"
+    data-nav-drawer
+    role="dialog"
+    aria-modal="true"
+    aria-label={t(locale, :navigation)}
+    hidden
+  >
+    <div class="app-drawer__header">
+      <p class="app-drawer__title">{t(locale, :navigation)}</p>
+      <button
+        type="button"
+        class="app-drawer__close"
+        data-nav-close
+        aria-label={t(locale, :close_navigation)}
+      >
+        ✕
+      </button>
+    </div>
+    <a href={~p"/daily/#{Date.to_iso8601(Date.utc_today())}"} class="brand-card">
+      <span class="brand-card__title">{t(locale, :app_name)}</span>
+      <span class="brand-card__copy">{t(locale, :app_subtitle)}</span>
+    </a>
+
+    <section class="mini-calendar">
+      <div class="mini-calendar__header">
+        <.link navigate={~p"/daily/#{Date.to_iso8601(previous_month)}"} class="calendar-arrow">
+          ‹
+        </.link>
+        <p>{month_label(locale, month_start)}</p>
+        <.link navigate={~p"/daily/#{Date.to_iso8601(next_month)}"} class="calendar-arrow">
+          ›
+        </.link>
+      </div>
+
+      <div class="mini-calendar__weekdays">
+        <span :for={name <- weekday_labels(locale)}>{name}</span>
+      </div>
+
+      <div class="mini-calendar__days">
+        <.link
+          :for={day <- calendar_days(month_start)}
+          navigate={~p"/daily/#{Date.to_iso8601(day)}"}
+          class={[
+            "calendar-day",
+            day.month != month_start.month && "is-muted",
+            day == Date.utc_today() && "is-today",
+            day == selected_date && "is-active"
+          ]}
+        >
+          <span>{day.day}</span>
+          <i :if={note_exists?(note_dates, day)} class="calendar-day__dot"></i>
+        </.link>
+      </div>
+    </section>
+
+    <form action={~p"/search"} method="get" class="sidebar-search">
+      <label class="field-label" for="global-search-mobile">{t(locale, :search)}</label>
+      <input
+        id="global-search-mobile"
+        class="text-input"
+        type="search"
+        name="q"
+        value={assigns[:search_query] || ""}
+        placeholder={t(locale, :search_placeholder)}
+        data-global-search
+      />
+    </form>
+
+    <nav class="sidebar-nav" aria-label={t(locale, :navigation)}>
       <a
         href={~p"/daily/#{Date.to_iso8601(Date.utc_today())}"}
         class={nav_item_class(current_section, :daily)}
@@ -118,6 +252,17 @@ current_section = assigns[:current_section] || :daily %>
   </aside>
 
   <main class="app-main">
+    <div class="app-main__mobile-bar">
+      <button
+        type="button"
+        class="app-main__nav-toggle"
+        data-nav-toggle
+        aria-controls="app-drawer"
+        aria-expanded="false"
+      >
+        ☰ {t(locale, :open_navigation)}
+      </button>
+    </div>
     <.flash_group flash={@flash} />
     {@inner_content}
   </main>
