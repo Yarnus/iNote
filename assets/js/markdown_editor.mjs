@@ -17,7 +17,12 @@ import {keymap} from "prosemirror-keymap"
 import {MarkdownParser, MarkdownSerializer, defaultMarkdownSerializer} from "prosemirror-markdown"
 import {Schema} from "prosemirror-model"
 import {schema as basicSchema} from "prosemirror-schema-basic"
-import {addListNodes, liftListItem, splitListItemKeepMarks} from "prosemirror-schema-list"
+import {
+  addListNodes,
+  liftListItem,
+  sinkListItem,
+  splitListItemKeepMarks
+} from "prosemirror-schema-list"
 import {EditorState, Plugin, PluginKey, Selection} from "prosemirror-state"
 import {Decoration, DecorationSet, EditorView} from "prosemirror-view"
 
@@ -298,6 +303,23 @@ function buildInlineCodeInputRule(schema) {
   })
 }
 
+function buildHorizontalRuleInputRule(schema) {
+  const {horizontal_rule: horizontalRule, paragraph} = schema.nodes
+
+  return new InputRule(/^([-*_])\1\1$/, (state, _match, start, end) => {
+    const {$from} = state.selection
+
+    if ($from.parent.type !== paragraph || $from.parent.textContent.length !== end - start) {
+      return null
+    }
+
+    const blockStart = $from.start()
+    const blockEnd = $from.end()
+
+    return state.tr.replaceWith(blockStart - 1, blockEnd + 1, horizontalRule.create()).scrollIntoView()
+  })
+}
+
 function buildListInputRules(schema) {
   const {blockquote, bullet_list: bulletList, code_block: codeBlock, heading, ordered_list: orderedList} =
     schema.nodes
@@ -307,6 +329,7 @@ function buildListInputRules(schema) {
     wrappingInputRule(/^>\s$/, blockquote),
     buildTaskListInputRule(schema),
     buildInlineCodeInputRule(schema),
+    buildHorizontalRuleInputRule(schema),
     wrappingInputRule(/^([-*])\s$/, bulletList),
     wrappingInputRule(/^(1)\.\s$/, orderedList, () => ({order: 1})),
     textblockTypeInputRule(/^```$/, codeBlock)
@@ -349,7 +372,23 @@ function buildKeymap(schema) {
   const {code, em, strong} = schema.marks
   const {list_item: listItem, task_item: taskItem} = schema.nodes
 
-  return keymap({
+  return keymap(buildEditorKeyBindings({code, em, strong, listItem, taskItem}))
+}
+
+function handleTabCommand(...commands) {
+  return (state, dispatch, view) => {
+    for (const command of commands) {
+      if (command(state, dispatch, view)) {
+        return true
+      }
+    }
+
+    return true
+  }
+}
+
+function buildEditorKeyBindings({code, em, strong, listItem, taskItem}) {
+  return {
     Enter: chainCommands(
       splitListItemKeepMarks(taskItem, {checked: false}),
       liftListItem(taskItem),
@@ -357,6 +396,8 @@ function buildKeymap(schema) {
       liftListItem(listItem),
       baseKeymap.Enter
     ),
+    Tab: handleTabCommand(sinkListItem(taskItem), sinkListItem(listItem)),
+    "Shift-Tab": handleTabCommand(liftListItem(taskItem), liftListItem(listItem)),
     Backspace: chainCommands(undoInputRule, clearCurrentBlockFormatting, baseKeymap.Backspace),
     "Mod-b": toggleMark(strong),
     "Mod-i": toggleMark(em),
@@ -364,7 +405,7 @@ function buildKeymap(schema) {
     "Mod-z": undo,
     "Shift-Mod-z": redo,
     "Mod-y": redo
-  })
+  }
 }
 
 const editorPlugins = [
@@ -638,4 +679,25 @@ export function applyTextInput(state, text) {
 
 export function createTestEditorState(markdown = "") {
   return createEditorState(markdown)
+}
+
+export function runKeyCommand(state, key) {
+  const {code, em, strong} = state.schema.marks
+  const {list_item: listItem, task_item: taskItem} = state.schema.nodes
+  const command = buildEditorKeyBindings({code, em, strong, listItem, taskItem})[key]
+
+  if (!command) {
+    return {state, handled: false}
+  }
+
+  let nextState = state
+  const handled = command(state, transaction => {
+    nextState = state.apply(transaction)
+  })
+
+  return {state: handled ? nextState : state, handled}
+}
+
+export function applyKeyCommand(state, key) {
+  return runKeyCommand(state, key).state
 }

@@ -2,9 +2,11 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {Selection} from "prosemirror-state"
 import {
+  applyKeyCommand,
   applyTextInput,
   createTestEditorState,
   parseMarkdown,
+  runKeyCommand,
   serializeMarkdown
 } from "./markdown_editor.mjs"
 
@@ -80,6 +82,22 @@ test("blockquote, ordered list, and code fence input rules convert blocks", () =
   assert.equal(codeBlockState.doc.firstChild.type.name, "code_block")
 })
 
+test("typing ---, ***, and ___ converts the current block into a horizontal rule", () => {
+  const dashState = applyTextInput(createTestEditorState(""), "---")
+  const starState = applyTextInput(createTestEditorState(""), "***")
+  const underscoreState = applyTextInput(createTestEditorState(""), "___")
+
+  assert.equal(dashState.doc.firstChild.type.name, "horizontal_rule")
+  assert.equal(starState.doc.firstChild.type.name, "horizontal_rule")
+  assert.equal(underscoreState.doc.firstChild.type.name, "horizontal_rule")
+})
+
+test("typing - followed by space still creates a bullet list item", () => {
+  const state = applyTextInput(createTestEditorState(""), "- ")
+
+  assert.equal(state.doc.firstChild.type.name, "bullet_list")
+})
+
 test("typing `test` converts inline markdown to code mark", () => {
   const state = applyTextInput(createTestEditorState(""), "`test`")
   const paragraph = state.doc.firstChild
@@ -124,6 +142,59 @@ test("code fence language survives markdown parsing and serialization", () => {
   assert.equal(codeBlock.attrs.language, "elixir")
   assert.match(serialized, /^```elixir$/m)
   assert.match(serialized, /^IO\.puts\(:ok\)$/m)
+})
+
+test("horizontal rules survive markdown parsing and serialization", () => {
+  const doc = parseMarkdown("---")
+  const serialized = serializeMarkdown(doc)
+
+  assert.equal(doc.firstChild.type.name, "horizontal_rule")
+  assert.equal(serialized.trim(), "---")
+})
+
+test("Tab indents a nested bullet list item and Shift-Tab lifts it", () => {
+  let state = createTestEditorState("- first\n- second")
+  const secondItemStart = state.doc.child(0).child(1).firstChild.nodeSize + 6
+
+  state = state.apply(state.tr.setSelection(Selection.near(state.doc.resolve(secondItemStart))))
+  state = applyKeyCommand(state, "Tab")
+
+  const list = state.doc.firstChild
+  assert.equal(list.childCount, 1)
+  assert.equal(list.firstChild.childCount, 2)
+  assert.equal(list.firstChild.lastChild.type.name, "bullet_list")
+  assert.equal(list.firstChild.lastChild.firstChild.textContent, "second")
+
+  state = state.apply(state.tr.setSelection(Selection.near(state.doc.resolve(secondItemStart + 2))))
+  state = applyKeyCommand(state, "Shift-Tab")
+
+  assert.equal(state.doc.firstChild.type.name, "bullet_list")
+  assert.equal(state.doc.firstChild.childCount, 2)
+  assert.equal(state.doc.firstChild.child(1).textContent, "second")
+})
+
+test("Tab indents a task item and preserves its checked state", () => {
+  let state = createTestEditorState("- [ ] parent\n- [x] child")
+  const childItemStart = state.doc.child(0).child(1).firstChild.nodeSize + 10
+
+  state = state.apply(state.tr.setSelection(Selection.near(state.doc.resolve(childItemStart))))
+  state = applyKeyCommand(state, "Tab")
+
+  const taskList = state.doc.firstChild
+  const nestedTaskList = taskList.firstChild.lastChild
+
+  assert.equal(taskList.type.name, "task_list")
+  assert.equal(nestedTaskList.type.name, "task_list")
+  assert.equal(nestedTaskList.firstChild.attrs.checked, true)
+  assert.equal(nestedTaskList.firstChild.textContent, "child")
+})
+
+test("Tab is still handled when the current block cannot be indented", () => {
+  const initial = createTestEditorState("plain paragraph")
+  const result = runKeyCommand(initial, "Tab")
+
+  assert.equal(result.handled, true)
+  assert.equal(serializeMarkdown(result.state.doc), "plain paragraph")
 })
 
 test("creating a fresh editor state uses the provided markdown only", () => {

@@ -265,6 +265,21 @@ const MarkdownEditor = {
       this.saveDraft(this.currentMarkdown)
     }
 
+    this.onSourceKeydown = event => {
+      if (event.key !== "Tab") return
+
+      event.preventDefault()
+
+      if (event.shiftKey) return
+
+      const {selectionStart, selectionEnd, value} = event.target
+      const nextValue = `${value.slice(0, selectionStart)}\t${value.slice(selectionEnd)}`
+
+      event.target.value = nextValue
+      event.target.setSelectionRange(selectionStart + 1, selectionStart + 1)
+      event.target.dispatchEvent(new Event("input", {bubbles: true}))
+    }
+
     this.onEditorKeydown = event => {
       if (!isModeToggleShortcut(event)) return
 
@@ -275,6 +290,7 @@ const MarkdownEditor = {
     this.el.addEventListener("click", this.onModeClick)
     this.el.addEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.addEventListener("input", this.onSourceInput)
+    this.sourceRoot?.addEventListener("keydown", this.onSourceKeydown)
     this.syncSourceInput(this.currentMarkdown)
     this.applyMode({focus: false})
   },
@@ -289,7 +305,7 @@ const MarkdownEditor = {
       return
     }
 
-    if (!this.isSyncing && nextMarkdown !== this.currentMarkdown) {
+    if (!this.isSyncing && nextMarkdown !== this.currentMarkdown && !this.isEditorFocused()) {
       this.syncFromDataset()
     }
   },
@@ -299,6 +315,7 @@ const MarkdownEditor = {
     this.el.removeEventListener("click", this.onModeClick)
     this.el.removeEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.removeEventListener("input", this.onSourceInput)
+    this.sourceRoot?.removeEventListener("keydown", this.onSourceKeydown)
     this.editor.destroy()
   },
 
@@ -327,6 +344,11 @@ const MarkdownEditor = {
     if (this.sourceRoot) {
       this.sourceRoot.value = markdown
     }
+  },
+
+  isEditorFocused() {
+    const activeElement = document.activeElement
+    return Boolean(activeElement && this.el.contains(activeElement))
   },
 
   setMode(mode, {focus = false} = {}) {
