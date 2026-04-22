@@ -146,12 +146,11 @@ defmodule INote.Notes do
     NoteTodo
     |> join(:inner, [todo], note in assoc(todo, :note))
     |> maybe_filter_todos(filter)
-    |> order_by([todo, note], desc: note.updated_at, asc: todo.line_no, asc: todo.id)
+    |> order_by([todo, note], desc: note.updated_at, asc: todo.id)
     |> select([todo, note], %{
       id: todo.id,
       text: todo.text,
       is_done: todo.is_done,
-      line_no: todo.line_no,
       note_id: note.id,
       note_kind: note.kind,
       note_date: note.note_date,
@@ -179,10 +178,9 @@ defmodule INote.Notes do
         [todo, note],
         note.kind == :daily and note.note_date >= ^month_start and note.note_date <= ^month_end
       )
-      |> order_by([todo, note], asc: note.note_date, asc: todo.line_no, asc: todo.id)
+      |> order_by([todo, note], asc: note.note_date, asc: todo.id)
       |> select([todo, note], %{
         note_date: note.note_date,
-        line_no: todo.line_no,
         text: todo.text,
         is_done: todo.is_done
       })
@@ -299,7 +297,6 @@ defmodule INote.Notes do
       |> Enum.map(fn todo ->
         %{
           note_id: note.id,
-          line_no: todo.line_no,
           text: todo.text,
           is_done: todo.is_done,
           inserted_at: now,

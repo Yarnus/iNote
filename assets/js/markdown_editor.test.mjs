@@ -8,7 +8,9 @@ import {
   getHashtagDecorationRanges,
   parseMarkdown,
   runKeyCommand,
-  serializeMarkdown
+  serializeMarkdown,
+  toggleTaskLineInText,
+  toggleTaskLineText
 } from "./markdown_editor.mjs"
 
 test("typing ###/####/#####/###### converts the current block into heading levels 3-6", () => {
@@ -73,6 +75,32 @@ test("typing [x] at the start of an existing task item toggles it checked", () =
   assert.equal(item.firstChild.textContent, "task")
 })
 
+test("toggleTaskLineText switches plain, bullet, and task prefixes", () => {
+  assert.equal(toggleTaskLineText("Draft spec"), "- [ ] Draft spec")
+  assert.equal(toggleTaskLineText("- Draft spec"), "- [ ] Draft spec")
+  assert.equal(toggleTaskLineText("- [ ] Draft spec"), "- Draft spec")
+  assert.equal(toggleTaskLineText("- [x] Draft spec"), "- [ ] Draft spec")
+  assert.equal(toggleTaskLineText(""), "- [ ] ")
+})
+
+test("toggleTaskLineInText updates only the current line", () => {
+  const text = "alpha\nbeta\ngamma"
+  const result = toggleTaskLineInText(text, 8)
+
+  assert.equal(result.text, "alpha\n- [ ] beta\ngamma")
+  assert.equal(result.selectionStart, 8)
+  assert.equal(result.selectionEnd, 8)
+})
+
+test("toggleTaskLineInText preserves caret on task-to-bullet toggle", () => {
+  const text = "- [ ] Draft spec"
+  const result = toggleTaskLineInText(text, 7)
+
+  assert.equal(result.text, "- Draft spec")
+  assert.equal(result.selectionStart, 7)
+  assert.equal(result.selectionEnd, 7)
+})
+
 test("blockquote, ordered list, and code fence input rules convert blocks", () => {
   const blockquoteState = applyTextInput(createTestEditorState(""), "> ")
   const orderedListState = applyTextInput(createTestEditorState(""), "1. ")
@@ -91,6 +119,30 @@ test("typing ---, ***, and ___ converts the current block into a horizontal rule
   assert.equal(dashState.doc.firstChild.type.name, "horizontal_rule")
   assert.equal(starState.doc.firstChild.type.name, "horizontal_rule")
   assert.equal(underscoreState.doc.firstChild.type.name, "horizontal_rule")
+})
+
+test("Shift-Mod-l toggles a paragraph into an unchecked task", () => {
+  const state = applyKeyCommand(createTestEditorState("Draft spec"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- [ ] Draft spec")
+})
+
+test("Shift-Mod-l toggles an unchecked task into a bullet list item", () => {
+  const state = applyKeyCommand(createTestEditorState("- [ ] Draft spec"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- Draft spec")
+})
+
+test("Shift-Mod-l toggles a bullet list item into an unchecked task", () => {
+  const state = applyKeyCommand(createTestEditorState("- Draft spec"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- [ ] Draft spec")
+})
+
+test("Shift-Mod-l resets a checked task item to unchecked", () => {
+  const state = applyKeyCommand(createTestEditorState("- [x] Draft spec"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- [ ] Draft spec")
 })
 
 test("typing - followed by space still creates a bullet list item", () => {

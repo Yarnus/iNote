@@ -6,44 +6,25 @@
     </div>
   </header>
 
-  <section class="panel">
-    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form" autocomplete="off">
-      <label for="tag-query" class="field-label">{t(@locale, :query)}</label>
-      <input
-        id="tag-query"
-        name="q"
-        type="search"
-        class="text-input"
-        value={@query}
-        placeholder={t(@locale, :tag_search_title)}
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="none"
-        spellcheck="false"
-        phx-debounce="250"
-      />
-    </.form>
-  </section>
-
   <section :if={@tags == []} class="empty-panel">
     <p>{t(@locale, :no_tags)}</p>
   </section>
 
-  <div :if={@tags != []} class="split-grid">
-    <section class="panel">
-      <div class="tag-list">
+  <div :if={@tags != []} class="tag-browser">
+    <section class="tag-browser__cloud">
+      <div class="tag-list tag-list--cloud">
         <.link
           :for={tag <- @tags}
-          patch={~p"/tags?#{[q: @query, tag: tag.tag]}"}
+          patch={~p"/tags?#{[tag: tag.tag]}"}
           class={["tag-chip", @selected_tag == tag.tag && "is-active"]}
         >
-          <span>#{tag.tag}</span>
+          <span class="tag-chip__label">#{tag.tag}</span>
           <span class="tag-chip__count">{tag.count}</span>
         </.link>
       </div>
     </section>
 
-    <section class="panel">
+    <section class="tag-browser__results">
       <div :if={is_nil(@selected_tag)} class="empty-panel empty-panel--flat">
         <p>{t(@locale, :pick_tag)}</p>
       </div>
@@ -52,7 +33,7 @@
         <p>{t(@locale, :no_notes_for_tag)}</p>
       </div>
 
-      <div :if={@selected_tag && @notes != []} class="result-list">
+      <div :if={@selected_tag && @notes != []} class="result-list result-list--tight">
         <.link :for={note <- @notes} navigate={note_path(note)} class="result-row">
           <div>
             <p class="result-row__title">{note.title}</p>

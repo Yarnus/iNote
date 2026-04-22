@@ -10,7 +10,7 @@
     </button>
   </header>
 
-  <section class="panel">
+  <section class="page-toolbar">
     <div class="filter-row filter-row--wide">
       <.form
         for={%{"q" => @query}}
@@ -62,7 +62,7 @@
     <p>{if @query == "", do: t(@locale, :no_notes_yet), else: t(@locale, :no_notes_match)}</p>
   </section>
 
-  <section :if={@notes != []} class="panel">
+  <section :if={@notes != []} class="content-stack">
     <div class="result-list">
       <.link :for={note <- @notes} navigate={~p"/notes/#{note.id}"} class="result-row">
         <div>

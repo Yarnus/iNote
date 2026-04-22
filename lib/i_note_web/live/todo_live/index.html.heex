@@ -6,31 +6,34 @@
     </div>
   </header>
 
-  <section class="panel">
-    <div class="filter-row">
+  <section class="todo-toolbar">
+    <div class="todo-filters" role="tablist" aria-label={t(@locale, :todo_filter_title)}>
       <button
         type="button"
-        class={["filter-pill", @filter == :all && "is-active"]}
+        class={["todo-filter", "todo-filter--all", @filter == :all && "is-active"]}
         phx-click="change_filter"
         phx-value-filter="all"
       >
-        {t(@locale, :filter_all)} ({@counts.all})
+        <span class="todo-filter__label">{t(@locale, :filter_all)}</span>
+        <span class="todo-filter__count">{@counts.all}</span>
       </button>
       <button
         type="button"
-        class={["filter-pill", @filter == :open && "is-active"]}
+        class={["todo-filter", "todo-filter--open", @filter == :open && "is-active"]}
         phx-click="change_filter"
         phx-value-filter="open"
       >
-        {t(@locale, :filter_open)} ({@counts.open})
+        <span class="todo-filter__label">{t(@locale, :filter_open)}</span>
+        <span class="todo-filter__count">{@counts.open}</span>
       </button>
       <button
         type="button"
-        class={["filter-pill", @filter == :done && "is-active"]}
+        class={["todo-filter", "todo-filter--done", @filter == :done && "is-active"]}
         phx-click="change_filter"
         phx-value-filter="done"
       >
-        {t(@locale, :filter_done)} ({@counts.done})
+        <span class="todo-filter__label">{t(@locale, :filter_done)}</span>
+        <span class="todo-filter__count">{@counts.done}</span>
       </button>
     </div>
   </section>
@@ -39,24 +42,18 @@
     <p>{t(@locale, :no_todos)}</p>
   </section>
 
-  <section :if={@todos != []} class="panel">
+  <section :if={@todos != []} class="todo-section">
     <div class="todo-list">
-      <article :for={todo <- @todos} class={["todo-row", todo.is_done && "is-done"]}>
-        <div>
+      <.link
+        :for={todo <- @todos}
+        navigate={note_path(%{id: todo.note_id, kind: todo.note_kind, note_date: todo.note_date})}
+        class={["todo-row", todo.is_done && "is-done"]}
+      >
+        <div class="todo-row__body">
           <p class="todo-row__text">{todo.text}</p>
-          <p class="todo-row__meta">
-            {note_meta(@locale, %{kind: todo.note_kind, note_date: todo.note_date})} · line {todo.line_no}
-          </p>
+          <p class="todo-row__meta">{todo_source_label(@locale, todo)}</p>
         </div>
-        <.link
-          navigate={
-            note_path(%{id: todo.note_id, kind: todo.note_kind, note_date: todo.note_date})
-          }
-          class="text-link"
-        >
-          {t(@locale, :open_note)}
-        </.link>
-      </article>
+      </.link>
     </div>
   </section>
 </section>

@@ -5,7 +5,6 @@ defmodule INote.Notes.NoteTodo do
   alias INote.Notes.Note
 
   schema "note_todos" do
-    field :line_no, :integer
     field :text, :string
     field :is_done, :boolean, default: false
 
@@ -17,10 +16,9 @@ defmodule INote.Notes.NoteTodo do
   @doc false
   def changeset(todo, attrs) do
     todo
-    |> cast(attrs, [:note_id, :line_no, :text, :is_done])
+    |> cast(attrs, [:note_id, :text, :is_done])
     |> update_change(:text, &normalize_text/1)
-    |> validate_required([:note_id, :line_no, :text, :is_done])
-    |> validate_number(:line_no, greater_than: 0)
+    |> validate_required([:note_id, :text, :is_done])
     |> validate_length(:text, max: 280)
   end
 

@@ -2,7 +2,7 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-import {createMarkdownEditor} from "./markdown_editor.mjs"
+import {createMarkdownEditor, toggleTaskLineInText} from "./markdown_editor.mjs"
 
 const THEME_KEY = "inote:theme"
 const EDITOR_MODE_KEY = "inote:editor-mode"
@@ -78,6 +78,12 @@ const isModeToggleShortcut = event =>
   !event.shiftKey &&
   !event.altKey &&
   (event.code === "Slash" || event.key === "/")
+
+const isToggleTaskShortcut = event =>
+  isPrimaryShortcut(event) &&
+  event.shiftKey &&
+  !event.altKey &&
+  event.key.toLowerCase() === "l"
 
 const focusVisibleSearchInput = () => {
   const searchInputs = [...document.querySelectorAll("[data-global-search]")]
@@ -303,6 +309,21 @@ const MarkdownEditor = {
     }
 
     this.onSourceKeydown = event => {
+      if (isToggleTaskShortcut(event)) {
+        event.preventDefault()
+
+        const nextState = toggleTaskLineInText(
+          event.target.value,
+          event.target.selectionStart,
+          event.target.selectionEnd
+        )
+
+        event.target.value = nextState.text
+        event.target.setSelectionRange(nextState.selectionStart, nextState.selectionEnd)
+        event.target.dispatchEvent(new Event("input", {bubbles: true}))
+        return
+      }
+
       if (event.key !== "Tab") return
 
       event.preventDefault()

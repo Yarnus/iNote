@@ -1,12 +1,10 @@
-<%
-locale = assigns[:locale] || "en"
+<% locale = assigns[:locale] || "en"
 selected_date = assigns[:selected_date] || Date.utc_today()
 month_start = Date.beginning_of_month(selected_date)
 previous_month = month_start |> Date.add(-1) |> Date.beginning_of_month()
 next_month = month_start |> Date.add(32) |> Date.beginning_of_month()
 current_path = assigns[:current_path] || ~p"/daily/#{Date.to_iso8601(selected_date)}"
-current_section = assigns[:current_section] || :daily
-%>
+current_section = assigns[:current_section] || :daily %>
 
 <div id="app-shell" class="app-shell" phx-hook="ResponsiveNav">
   <aside class="app-sidebar app-sidebar--desktop">
@@ -27,7 +25,10 @@ current_section = assigns[:current_section] || :daily
       </div>
 
       <div class="mini-calendar__weekdays">
-        <span :for={{name, index} <- Enum.with_index(weekday_labels(locale))} class={weekday_label_class(index)}>
+        <span
+          :for={{name, index} <- Enum.with_index(weekday_labels(locale))}
+          class={weekday_label_class(index)}
+        >
           {name}
         </span>
       </div>
@@ -86,7 +87,7 @@ current_section = assigns[:current_section] || :daily
 
     <div class="sidebar-footer">
       <details class="settings-menu">
-        <summary class="settings-menu__toggle">
+        <summary class="settings-menu__toggle sidebar-nav__item">
           <span>{t(locale, :settings)}</span>
           <span class="settings-menu__caret">⌄</span>
         </summary>
@@ -165,7 +166,10 @@ current_section = assigns[:current_section] || :daily
       </div>
 
       <div class="mini-calendar__weekdays">
-        <span :for={{name, index} <- Enum.with_index(weekday_labels(locale))} class={weekday_label_class(index)}>
+        <span
+          :for={{name, index} <- Enum.with_index(weekday_labels(locale))}
+          class={weekday_label_class(index)}
+        >
           {name}
         </span>
       </div>
@@ -224,7 +228,7 @@ current_section = assigns[:current_section] || :daily
 
     <div class="sidebar-footer">
       <details class="settings-menu">
-        <summary class="settings-menu__toggle">
+        <summary class="settings-menu__toggle sidebar-nav__item">
           <span>{t(locale, :settings)}</span>
           <span class="settings-menu__caret">⌄</span>
         </summary>

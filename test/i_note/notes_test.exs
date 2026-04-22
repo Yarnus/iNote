@@ -72,6 +72,8 @@ defmodule INote.NotesTest do
 
     assert Enum.any?(open_todos, &(&1.text == "Ship demo" and &1.note_kind == :normal))
     assert Enum.any?(done_todos, &(&1.text == "Write summary" and &1.note_kind == :normal))
+    assert Enum.all?(open_todos, &(not Map.has_key?(&1, :line_no)))
+    assert Enum.all?(done_todos, &(not Map.has_key?(&1, :line_no)))
   end
 
   test "search_notes/1 ranks title matches before content matches across note kinds" do
@@ -179,11 +181,10 @@ defmodule INote.NotesTest do
                items: [
                  %{
                    note_date: ~D[2026-04-01],
-                   line_no: 2,
                    text: "Draft monthly goals",
                    is_done: false
                  },
-                 %{note_date: ~D[2026-04-03], line_no: 1, text: "Finish kickoff", is_done: true}
+                 %{note_date: ~D[2026-04-03], text: "Finish kickoff", is_done: true}
                ]
              },
              %{
@@ -193,13 +194,11 @@ defmodule INote.NotesTest do
                items: [
                  %{
                    note_date: ~D[2026-04-06],
-                   line_no: 1,
                    text: "Review launch checklist",
                    is_done: false
                  },
                  %{
                    note_date: ~D[2026-04-10],
-                   line_no: 1,
                    text: "Ship iteration one",
                    is_done: true
                  }
@@ -210,7 +209,7 @@ defmodule INote.NotesTest do
                start_date: ~D[2026-04-27],
                end_date: ~D[2026-04-30],
                items: [
-                 %{note_date: ~D[2026-04-30], line_no: 3, text: "Wrap up release", is_done: false}
+                 %{note_date: ~D[2026-04-30], text: "Wrap up release", is_done: false}
                ]
              }
            ]
@@ -233,10 +232,9 @@ defmodule INote.NotesTest do
            ]
 
     assert Enum.flat_map(report.weeks, & &1.items) == [
-             %{note_date: ~D[2026-05-01], line_no: 1, text: "Close April", is_done: true},
+             %{note_date: ~D[2026-05-01], text: "Close April", is_done: true},
              %{
                note_date: ~D[2026-05-08],
-               line_no: 1,
                text: "Demo sprint progress",
                is_done: true
              }

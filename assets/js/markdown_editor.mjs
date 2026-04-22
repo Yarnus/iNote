@@ -15,7 +15,7 @@ import {
 } from "prosemirror-inputrules"
 import {keymap} from "prosemirror-keymap"
 import {MarkdownParser, MarkdownSerializer, defaultMarkdownSerializer} from "prosemirror-markdown"
-import {Schema} from "prosemirror-model"
+import {Fragment, Schema} from "prosemirror-model"
 import {schema as basicSchema} from "prosemirror-schema-basic"
 import {
   addListNodes,
@@ -27,6 +27,8 @@ import {EditorState, Plugin, PluginKey, Selection} from "prosemirror-state"
 import {Decoration, DecorationSet, EditorView} from "prosemirror-view"
 
 const TASK_MARKER_PATTERN = /^\[( |x|X)\](?:\s+|$)/
+const TASK_LINE_PATTERN = /^- \[( |x|X)\](?: ?(.*))?$/
+const BULLET_LINE_PATTERN = /^- (.*)$/
 const HASHTAG_PATTERN = /(^|[\s([{\u3000])(#([\p{L}\p{N}_-]+))/gu
 const MAX_MATCH = 500
 
@@ -151,6 +153,9 @@ const markdownParser = new MarkdownParser(editorSchema, MarkdownIt("commonmark",
 const markdownSerializer = new MarkdownSerializer(
   {
     ...defaultMarkdownSerializer.nodes,
+    bullet_list(state, node) {
+      state.renderList(node, "  ", () => "- ")
+    },
     task_list(state, node) {
       state.renderList(node, "  ", index => `- [${node.child(index).attrs.checked ? "x" : " "}] `)
     },
@@ -389,6 +394,179 @@ function handleTabCommand(...commands) {
   }
 }
 
+function findAncestorDepth($from, predicate) {
+  for (let depth = $from.depth; depth >= 0; depth -= 1) {
+    if (predicate($from.node(depth), depth)) return depth
+  }
+
+  return null
+}
+
+function taskText(text = "") {
+  return `- [ ] ${text}`
+}
+
+function bulletText(text = "") {
+  return `- ${text}`
+}
+
+export function toggleTaskLineText(line) {
+  const uncheckedMatch = line.match(TASK_LINE_PATTERN)
+
+  if (uncheckedMatch) {
+    const checked = uncheckedMatch[1].toLowerCase() === "x"
+    const content = uncheckedMatch[2] || ""
+    return checked ? taskText(content) : bulletText(content)
+  }
+
+  const bulletMatch = line.match(BULLET_LINE_PATTERN)
+
+  if (bulletMatch) {
+    return taskText(bulletMatch[1] || "")
+  }
+
+  return taskText(line)
+}
+
+export function toggleTaskLineInText(text, selectionStart, selectionEnd = selectionStart) {
+  const lineStart = text.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1
+  const nextBreak = text.indexOf("\n", selectionStart)
+  const lineEnd = nextBreak === -1 ? text.length : nextBreak
+  const line = text.slice(lineStart, lineEnd)
+  const nextLine = toggleTaskLineText(line)
+  const nextText = `${text.slice(0, lineStart)}${nextLine}${text.slice(lineEnd)}`
+  const anchorOffset = Math.min(selectionStart - lineStart, nextLine.length)
+  const headOffset = Math.min(selectionEnd - lineStart, nextLine.length)
+
+  return {
+    text: nextText,
+    selectionStart: lineStart + anchorOffset,
+    selectionEnd: lineStart + headOffset
+  }
+}
+
+function createParagraphFromBlock(state, blockNode) {
+  const {paragraph} = state.schema.nodes
+
+  if (blockNode.type === paragraph) return blockNode
+  if (blockNode.inlineContent) return paragraph.create(null, blockNode.content)
+  if (blockNode.textContent === "") return paragraph.create()
+
+  return paragraph.create(null, state.schema.text(blockNode.textContent))
+}
+
+function replaceCurrentListItem(state, dispatch, {itemDepth, fromListType, toListType, toItemType, attrs}) {
+  const {$from} = state.selection
+  const listDepth = itemDepth - 1
+  const listNode = $from.node(listDepth)
+
+  if (listNode.type !== fromListType) return false
+
+  const itemIndex = $from.index(listDepth)
+  const currentItem = listNode.child(itemIndex)
+  const beforeItems = []
+  const afterItems = []
+
+  for (let index = 0; index < itemIndex; index += 1) beforeItems.push(listNode.child(index))
+  for (let index = itemIndex + 1; index < listNode.childCount; index += 1) afterItems.push(listNode.child(index))
+
+  const replacementNodes = []
+
+  if (beforeItems.length > 0) {
+    replacementNodes.push(fromListType.create(null, beforeItems))
+  }
+
+  replacementNodes.push(toListType.create(null, [toItemType.create(attrs, currentItem.content)]))
+
+  if (afterItems.length > 0) {
+    replacementNodes.push(fromListType.create(null, afterItems))
+  }
+
+  const listPos = $from.before(listDepth)
+  const currentListOffset = beforeItems.length > 0 ? replacementNodes[0].nodeSize : 0
+  const tr = state.tr.replaceWith(
+    listPos,
+    listPos + listNode.nodeSize,
+    Fragment.fromArray(replacementNodes)
+  )
+  const selectionBase = Math.min(listPos + currentListOffset + 2, tr.doc.content.size)
+
+  if (dispatch) {
+    dispatch(tr.setSelection(Selection.near(tr.doc.resolve(selectionBase))).scrollIntoView())
+  }
+
+  return true
+}
+
+function toggleCurrentLineTask(state, dispatch) {
+  const {$from} = state.selection
+  const {
+    bullet_list: bulletList,
+    list_item: listItem,
+    paragraph,
+    task_item: taskItem,
+    task_list: taskList
+  } = state.schema.nodes
+
+  const taskItemDepth = findAncestorDepth($from, node => node.type === taskItem)
+
+  if (taskItemDepth !== null) {
+    const itemPos = $from.before(taskItemDepth)
+    const currentItem = $from.node(taskItemDepth)
+
+    if (currentItem.attrs.checked) {
+      if (dispatch) {
+        dispatch(
+          state.tr
+            .setNodeMarkup(itemPos, taskItem, {
+              ...currentItem.attrs,
+              checked: false
+            })
+            .scrollIntoView()
+        )
+      }
+
+      return true
+    }
+
+    return replaceCurrentListItem(state, dispatch, {
+      itemDepth: taskItemDepth,
+      fromListType: taskList,
+      toListType: bulletList,
+      toItemType: listItem
+    })
+  }
+
+  const listItemDepth = findAncestorDepth($from, node => node.type === listItem)
+
+  if (listItemDepth !== null) {
+    return replaceCurrentListItem(state, dispatch, {
+      itemDepth: listItemDepth,
+      fromListType: bulletList,
+      toListType: taskList,
+      toItemType: taskItem,
+      attrs: {checked: false}
+    })
+  }
+
+  const blockDepth = findAncestorDepth($from, node => node.isTextblock)
+
+  if (blockDepth === null) return false
+
+  const blockNode = $from.node(blockDepth)
+  const blockPos = $from.before(blockDepth)
+  const paragraphNode = createParagraphFromBlock(state, blockNode)
+  const nextNode = taskList.create(null, [taskItem.create({checked: false}, [paragraphNode])])
+  const tr = state.tr.replaceWith(blockPos, blockPos + blockNode.nodeSize, nextNode)
+  const selectionBase = Math.min(blockPos + 2, tr.doc.content.size)
+
+  if (dispatch) {
+    dispatch(tr.setSelection(Selection.near(tr.doc.resolve(selectionBase))).scrollIntoView())
+  }
+
+  return true
+}
+
 function buildEditorKeyBindings({code, em, strong, listItem, taskItem}) {
   return {
     Enter: chainCommands(
@@ -404,6 +582,7 @@ function buildEditorKeyBindings({code, em, strong, listItem, taskItem}) {
     "Mod-b": toggleMark(strong),
     "Mod-i": toggleMark(em),
     "Mod-`": toggleMark(code),
+    "Shift-Mod-l": toggleCurrentLineTask,
     "Mod-z": undo,
     "Shift-Mod-z": redo,
     "Mod-y": redo

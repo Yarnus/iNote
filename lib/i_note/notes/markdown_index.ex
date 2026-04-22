@@ -20,8 +20,7 @@ defmodule INote.Notes.MarkdownIndex do
   def extract_todos(markdown) when is_binary(markdown) do
     markdown
     |> String.split("\n")
-    |> Enum.with_index(1)
-    |> Enum.reduce([], fn {line, line_no}, acc ->
+    |> Enum.reduce([], fn line, acc ->
       case Regex.run(@todo_pattern, line) do
         [_, marker, text] ->
           trimmed = String.trim(text)
@@ -29,7 +28,7 @@ defmodule INote.Notes.MarkdownIndex do
           if trimmed == "" do
             acc
           else
-            [%{line_no: line_no, text: trimmed, is_done: String.downcase(marker) == "x"} | acc]
+            [%{text: trimmed, is_done: String.downcase(marker) == "x"} | acc]
           end
 
         _ ->
