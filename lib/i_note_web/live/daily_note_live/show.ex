@@ -17,7 +17,6 @@ defmodule INoteWeb.DailyNoteLive.Show do
        monthly_report_path:
          ~p"/reports/monthly/#{Date.to_iso8601(Date.beginning_of_month(today))}",
        note: nil,
-       calendar_note_dates: [],
        save_status: :idle
      )}
   end
@@ -36,7 +35,6 @@ defmodule INoteWeb.DailyNoteLive.Show do
            monthly_report_path:
              ~p"/reports/monthly/#{Date.to_iso8601(Date.beginning_of_month(date))}",
            note: note,
-           calendar_note_dates: Notes.list_dates_with_daily_notes(date),
            save_status: :idle
          )}
 
@@ -89,6 +87,14 @@ defmodule INoteWeb.DailyNoteLive.Show do
 
   defp save_status_text(locale, :saved), do: t(locale, :saved)
   defp save_status_text(locale, _), do: t(locale, :save_hint)
+
+  defp last_saved_at_iso(nil), do: nil
+
+  defp last_saved_at_iso(%NaiveDateTime{} = updated_at), do: "#{NaiveDateTime.to_iso8601(updated_at)}Z"
+  defp last_saved_at_iso(%DateTime{} = updated_at), do: DateTime.to_iso8601(updated_at)
+
+  defp last_saved_fallback_text(nil), do: nil
+  defp last_saved_fallback_text(updated_at), do: Calendar.strftime(updated_at, "%Y-%m-%d %H:%M")
 
   defp page_date_title("zh", date), do: Calendar.strftime(date, "%Y年%m月%d日")
   defp page_date_title(_, date), do: Calendar.strftime(date, "%A, %B %-d, %Y")

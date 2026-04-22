@@ -12,7 +12,6 @@ defmodule INoteWeb.NoteLive.Show do
        page_title: "Note",
        search_query: "",
        selected_date: Notes.today(),
-       calendar_note_dates: Notes.list_dates_with_daily_notes(Notes.today()),
        note: nil,
        save_status: :idle,
        title_input: ""
@@ -126,4 +125,12 @@ defmodule INoteWeb.NoteLive.Show do
 
   defp save_status_text(locale, :saved), do: t(locale, :saved)
   defp save_status_text(locale, _), do: t(locale, :save_hint)
+
+  defp last_saved_at_iso(nil), do: nil
+
+  defp last_saved_at_iso(%NaiveDateTime{} = updated_at), do: "#{NaiveDateTime.to_iso8601(updated_at)}Z"
+  defp last_saved_at_iso(%DateTime{} = updated_at), do: DateTime.to_iso8601(updated_at)
+
+  defp last_saved_fallback_text(nil), do: nil
+  defp last_saved_fallback_text(updated_at), do: Calendar.strftime(updated_at, "%Y-%m-%d %H:%M")
 end

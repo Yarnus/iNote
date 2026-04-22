@@ -5,6 +5,7 @@ import {
   applyKeyCommand,
   applyTextInput,
   createTestEditorState,
+  getHashtagDecorationRanges,
   parseMarkdown,
   runKeyCommand,
   serializeMarkdown
@@ -204,4 +205,12 @@ test("creating a fresh editor state uses the provided markdown only", () => {
   assert.equal(first.doc.firstChild.textContent, "First")
   assert.equal(second.doc.firstChild.textContent, "Second")
   assert.equal(second.doc.firstChild.attrs.level, 2)
+})
+
+test("hashtag decorations apply in paragraphs but not headings", () => {
+  const doc = parseMarkdown("# Heading #NoStyle\n\nPlain #Tag and `#NoCode`")
+  const ranges = getHashtagDecorationRanges(doc)
+  const decoratedText = ranges.map(({from, to}) => doc.textBetween(from, to, "\n", "\n"))
+
+  assert.deepEqual(decoratedText, ["#Tag"])
 })

@@ -15,7 +15,6 @@ defmodule INoteWeb.MonthlyReportLive.Show do
        page_title: "Monthly report",
        search_query: "",
        selected_date: month_start,
-       calendar_note_dates: Notes.list_dates_with_daily_notes(month_start),
        month_start: month_start,
        report_weeks: [],
        report_markdown: ""
@@ -35,7 +34,6 @@ defmodule INoteWeb.MonthlyReportLive.Show do
            current_path: ~p"/reports/monthly/#{Date.to_iso8601(month_start)}",
            page_title: t(locale, :monthly_report_title),
            selected_date: month_start,
-           calendar_note_dates: Notes.list_dates_with_daily_notes(month_start),
            month_start: month_start,
            report_weeks: report.weeks,
            report_markdown: format_report(locale, report)

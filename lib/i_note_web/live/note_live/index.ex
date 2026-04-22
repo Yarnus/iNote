@@ -14,7 +14,6 @@ defmodule INoteWeb.NoteLive.Index do
        page_title: "Notes",
        search_query: "",
        selected_date: today,
-       calendar_note_dates: Notes.list_dates_with_daily_notes(today),
        notes: [],
        query: "",
        sort: "updated_desc"

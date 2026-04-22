@@ -15,7 +15,6 @@ defmodule INoteWeb.SearchLive.Index do
        search_query: "",
        query: "",
        selected_date: today,
-       calendar_note_dates: Notes.list_dates_with_daily_notes(today),
        results: []
      )}
   end
@@ -30,7 +29,6 @@ defmodule INoteWeb.SearchLive.Index do
        current_path: if(query == "", do: ~p"/search", else: ~p"/search?#{[q: query]}"),
        search_query: query,
        selected_date: Notes.today(),
-       calendar_note_dates: Notes.list_dates_with_daily_notes(Notes.today()),
        query: query,
        results: Notes.search_notes(query)
      )}

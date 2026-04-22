@@ -3,9 +3,23 @@
     <div>
       <p class="main-page__eyebrow">{t(@locale, :daily_notes)}</p>
       <h1 class="main-page__title">{page_date_title(@locale, @selected_date)}</h1>
-      <p class={["main-page__subtitle", @save_status == :saved && "is-saved"]}>
-        {save_status_text(@locale, @save_status)}
-      </p>
+      <div class="editor-status">
+        <p class={["main-page__subtitle", @save_status == :saved && "is-saved"]}>
+          {save_status_text(@locale, @save_status)}
+        </p>
+        <p :if={@note && @note.updated_at} class="main-page__meta">
+          <span class="main-page__meta-label">{t(@locale, :last_saved_at)}</span>
+          <time
+            id={"daily-note-last-saved-#{@note.id}"}
+            phx-hook="LocalTime"
+            data-local-datetime={last_saved_at_iso(@note.updated_at)}
+            datetime={last_saved_at_iso(@note.updated_at)}
+            class="local-time"
+          >
+            {last_saved_fallback_text(@note.updated_at)}
+          </time>
+        </p>
+      </div>
     </div>
 
     <nav class="date-nav" aria-label={t(@locale, :sidebar_calendar)}>

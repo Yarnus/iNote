@@ -49,5 +49,6 @@ defmodule INoteWeb.MonthlyReportLiveTest do
     {:ok, _view, html} = live(conn, ~p"/reports/monthly/2026-06-01")
 
     assert html =~ "No task items found for this month."
+    assert html =~ ~s(class="empty-panel report-panel")
   end
 end

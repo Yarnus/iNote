@@ -4,7 +4,6 @@ selected_date = assigns[:selected_date] || Date.utc_today()
 month_start = Date.beginning_of_month(selected_date)
 previous_month = month_start |> Date.add(-1) |> Date.beginning_of_month()
 next_month = month_start |> Date.add(32) |> Date.beginning_of_month()
-note_dates = assigns[:calendar_note_dates] || []
 current_path = assigns[:current_path] || ~p"/daily/#{Date.to_iso8601(selected_date)}"
 current_section = assigns[:current_section] || :daily
 %>
@@ -28,7 +27,9 @@ current_section = assigns[:current_section] || :daily
       </div>
 
       <div class="mini-calendar__weekdays">
-        <span :for={name <- weekday_labels(locale)}>{name}</span>
+        <span :for={{name, index} <- Enum.with_index(weekday_labels(locale))} class={weekday_label_class(index)}>
+          {name}
+        </span>
       </div>
 
       <div class="mini-calendar__days">
@@ -38,17 +39,18 @@ current_section = assigns[:current_section] || :daily
           class={[
             "calendar-day",
             day.month != month_start.month && "is-muted",
+            weekend_class(day),
             day == Date.utc_today() && "is-today",
             day == selected_date && "is-active"
           ]}
         >
           <span>{day.day}</span>
-          <i :if={note_exists?(note_dates, day)} class="calendar-day__dot"></i>
+          <i :if={day == Date.utc_today()} class="calendar-day__dot"></i>
         </.link>
       </div>
     </section>
 
-    <form action={~p"/search"} method="get" class="sidebar-search">
+    <form action={~p"/search"} method="get" class="sidebar-search" autocomplete="off">
       <label class="field-label" for="global-search-desktop">{t(locale, :search)}</label>
       <input
         id="global-search-desktop"
@@ -57,6 +59,10 @@ current_section = assigns[:current_section] || :daily
         name="q"
         value={assigns[:search_query] || ""}
         placeholder={t(locale, :search_placeholder)}
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="none"
+        spellcheck="false"
         data-global-search
       />
     </form>
@@ -159,7 +165,9 @@ current_section = assigns[:current_section] || :daily
       </div>
 
       <div class="mini-calendar__weekdays">
-        <span :for={name <- weekday_labels(locale)}>{name}</span>
+        <span :for={{name, index} <- Enum.with_index(weekday_labels(locale))} class={weekday_label_class(index)}>
+          {name}
+        </span>
       </div>
 
       <div class="mini-calendar__days">
@@ -169,17 +177,18 @@ current_section = assigns[:current_section] || :daily
           class={[
             "calendar-day",
             day.month != month_start.month && "is-muted",
+            weekend_class(day),
             day == Date.utc_today() && "is-today",
             day == selected_date && "is-active"
           ]}
         >
           <span>{day.day}</span>
-          <i :if={note_exists?(note_dates, day)} class="calendar-day__dot"></i>
+          <i :if={day == Date.utc_today()} class="calendar-day__dot"></i>
         </.link>
       </div>
     </section>
 
-    <form action={~p"/search"} method="get" class="sidebar-search">
+    <form action={~p"/search"} method="get" class="sidebar-search" autocomplete="off">
       <label class="field-label" for="global-search-mobile">{t(locale, :search)}</label>
       <input
         id="global-search-mobile"
@@ -188,6 +197,10 @@ current_section = assigns[:current_section] || :daily
         name="q"
         value={assigns[:search_query] || ""}
         placeholder={t(locale, :search_placeholder)}
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="none"
+        spellcheck="false"
         data-global-search
       />
     </form>

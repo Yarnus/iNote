@@ -27,6 +27,7 @@ import {EditorState, Plugin, PluginKey, Selection} from "prosemirror-state"
 import {Decoration, DecorationSet, EditorView} from "prosemirror-view"
 
 const TASK_MARKER_PATTERN = /^\[( |x|X)\](?:\s+|$)/
+const HASHTAG_PATTERN = /(^|[\s([{\u3000])(#([\p{L}\p{N}_-]+))/gu
 const MAX_MATCH = 500
 
 const listNodes = addListNodes(basicSchema.spec.nodes, "paragraph block*", "block").update("code_block", {
@@ -71,6 +72,7 @@ const listNodes = addListNodes(basicSchema.spec.nodes, "paragraph block*", "bloc
 })
 
 const highlightPluginKey = new PluginKey("codeSyntaxHighlight")
+const hashtagPluginKey = new PluginKey("hashtagHighlight")
 
 export const editorSchema = new Schema({
   nodes: listNodes.append({
@@ -413,6 +415,22 @@ const editorPlugins = [
   inputRules({rules: editorInputRules}),
   buildKeymap(editorSchema),
   new Plugin({
+    key: hashtagPluginKey,
+    state: {
+      init(_, {doc}) {
+        return buildHashtagDecorations(doc)
+      },
+      apply(transaction, decorationSet, _oldState, newState) {
+        return transaction.docChanged ? buildHashtagDecorations(newState.doc) : decorationSet
+      }
+    },
+    props: {
+      decorations(state) {
+        return hashtagPluginKey.getState(state)
+      }
+    }
+  }),
+  new Plugin({
     key: highlightPluginKey,
     state: {
       init(_, {doc}) {
@@ -430,6 +448,37 @@ const editorPlugins = [
   }),
   keymap(baseKeymap)
 ]
+
+function buildHashtagDecorations(doc) {
+  const decorations = getHashtagDecorationRanges(doc).map(({from, to}) =>
+    Decoration.inline(from, to, {class: "pm-hashtag"})
+  )
+
+  return decorations.length === 0 ? DecorationSet.empty : DecorationSet.create(doc, decorations)
+}
+
+export function getHashtagDecorationRanges(doc) {
+  const ranges = []
+
+  doc.descendants((node, pos, parent) => {
+    if (!node.isText || !node.text || !parent) return
+    if (parent.type.name === "heading" || parent.type.name === "code_block") return
+    if (node.marks.some(mark => mark.type.name === "code")) return
+
+    HASHTAG_PATTERN.lastIndex = 0
+
+    for (const match of node.text.matchAll(HASHTAG_PATTERN)) {
+      const prefix = match[1] || ""
+      const hashtag = match[2]
+      const from = pos + match.index + prefix.length
+      const to = from + hashtag.length
+
+      ranges.push({from, to})
+    }
+  })
+
+  return ranges
+}
 
 function buildCodeBlockDecorations(doc) {
   if (typeof DOMParser === "undefined") {

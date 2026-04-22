@@ -7,7 +7,7 @@
   </header>
 
   <section class="panel">
-    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form">
+    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form" autocomplete="off">
       <label for="search-page-input" class="field-label">{t(@locale, :query)}</label>
       <input
         id="search-page-input"
@@ -16,6 +16,10 @@
         class="text-input text-input--large"
         value={@query}
         placeholder={t(@locale, :search_placeholder)}
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="none"
+        spellcheck="false"
         phx-debounce="250"
       />
     </.form>

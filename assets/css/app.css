@@ -22,6 +22,8 @@
   --accent-soft: rgba(109, 130, 170, 0.16);
   --success: #6e8f76;
   --danger: #a26463;
+  --weekend-saturday: #6f7f9b;
+  --weekend-sunday: #9a6c63;
   --shadow: 0 16px 40px rgba(77, 58, 33, 0.08);
   --md-h1: #5f7e9e;
   --md-h2: #9a7f51;
@@ -32,6 +34,9 @@
   --md-em: #685b49;
   --md-link: #5e79ab;
   --md-link-underline: rgba(94, 121, 171, 0.42);
+  --md-tag-bg: rgba(109, 130, 170, 0.16);
+  --md-tag-border: rgba(109, 130, 170, 0.28);
+  --md-tag-fg: #536f9b;
   --md-code-fg: #5e4a31;
   --md-code-bg: #efe5d6;
   --md-quote-fg: #716452;
@@ -65,6 +70,8 @@ html[data-theme="dark"] {
   --accent-soft: rgba(126, 156, 216, 0.22);
   --success: #87a58c;
   --danger: #c28784;
+  --weekend-saturday: #8ea2c8;
+  --weekend-sunday: #c08a80;
   --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
   --md-h1: #8ca6d5;
   --md-h2: #c5aa78;
@@ -75,6 +82,9 @@ html[data-theme="dark"] {
   --md-em: #d2c8b8;
   --md-link: #8cafef;
   --md-link-underline: rgba(140, 175, 239, 0.48);
+  --md-tag-bg: rgba(126, 156, 216, 0.16);
+  --md-tag-border: rgba(126, 156, 216, 0.3);
+  --md-tag-fg: #9db9ee;
   --md-code-fg: #e7c58d;
   --md-code-bg: #2f3442;
   --md-quote-fg: #b9ac95;
@@ -305,6 +315,14 @@ mark {
   text-align: center;
 }
 
+.mini-calendar__weekday.is-saturday {
+  color: color-mix(in srgb, var(--weekend-saturday) 72%, var(--text-muted));
+}
+
+.mini-calendar__weekday.is-sunday {
+  color: color-mix(in srgb, var(--weekend-sunday) 72%, var(--text-muted));
+}
+
 .mini-calendar__days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -326,9 +344,18 @@ mark {
   opacity: 0.55;
 }
 
+.calendar-day.is-saturday {
+  color: color-mix(in srgb, var(--weekend-saturday) 78%, var(--text));
+}
+
+.calendar-day.is-sunday {
+  color: color-mix(in srgb, var(--weekend-sunday) 82%, var(--text));
+}
+
 .calendar-day.is-active {
   border-color: var(--accent);
   background: var(--accent-soft);
+  color: var(--text);
 }
 
 .calendar-day.is-today {
@@ -477,6 +504,36 @@ mark {
   color: var(--success);
 }
 
+.editor-status {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.editor-status .main-page__subtitle,
+.editor-status .main-page__meta {
+  margin: 0;
+}
+
+.main-page__meta {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.main-page__meta-label {
+  white-space: nowrap;
+}
+
+.local-time {
+  color: color-mix(in srgb, var(--text) 78%, var(--text-muted));
+  font-variant-numeric: tabular-nums;
+}
+
 .panel {
   padding: 1rem;
 }
@@ -527,6 +584,7 @@ mark {
 .note-header__content {
   flex: 1 1 auto;
   min-width: 0;
+  width: min(100%, 900px);
 }
 
 .note-header__title-form {
@@ -545,7 +603,7 @@ mark {
 .note-header__meta-row {
   margin-top: 0.55rem;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -756,7 +814,7 @@ mark {
   background: color-mix(in srgb, var(--surface) 55%, transparent);
   color: var(--text);
   padding: 1.1rem clamp(1rem, 3vw, 1.7rem) 3rem;
-  line-height: 1.78;
+  line-height: 1.2;
   outline: none;
 }
 
@@ -774,7 +832,7 @@ mark {
   outline: none;
   padding: 1.1rem clamp(1rem, 3vw, 1.7rem) 3rem;
   font-size: 1.02rem;
-  line-height: 1.82;
+  line-height: 1.2;
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
@@ -794,7 +852,7 @@ mark {
 .inote-prosemirror ol,
 .inote-prosemirror blockquote,
 .inote-prosemirror pre {
-  margin: 0.72rem 0;
+  margin: 0.48rem 0;
 }
 
 .inote-prosemirror h1,
@@ -802,9 +860,9 @@ mark {
 .inote-prosemirror h3,
 .inote-prosemirror h4,
 .inote-prosemirror h5 {
-  margin: 2rem 0 0.8rem;
+  margin: 1.35rem 0 0.45rem;
   font-family: var(--font-serif);
-  line-height: 1.16;
+  line-height: 1.12;
 }
 
 .inote-prosemirror h1 {
@@ -833,11 +891,12 @@ mark {
 }
 
 .inote-prosemirror h6 {
-  margin: 1.5rem 0 0.7rem;
+  margin: 1.1rem 0 0.4rem;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
+  line-height: 1.15;
 }
 
 .inote-prosemirror ul,
@@ -854,7 +913,7 @@ mark {
 }
 
 .inote-prosemirror li {
-  margin: 0.3rem 0;
+  margin: 0.16rem 0;
 }
 
 .inote-prosemirror li::marker {
@@ -868,7 +927,7 @@ mark {
 
 .inote-prosemirror blockquote {
   margin-left: 0;
-  padding: 0.25rem 0 0.25rem 1rem;
+  padding: 0.18rem 0 0.18rem 0.9rem;
   border-left: 3px solid var(--md-quote-border);
   color: var(--md-quote-fg);
   background: linear-gradient(90deg, var(--accent-soft), transparent 60%);
@@ -888,7 +947,7 @@ mark {
   background: var(--surface-muted);
   border: 1px solid rgba(0, 0, 0, 0.04);
   overflow-x: auto;
-  line-height: 1.65;
+  line-height: 1.2;
   position: relative;
 }
 
@@ -913,6 +972,17 @@ mark {
   text-decoration: underline;
   text-decoration-color: var(--md-link-underline);
   text-underline-offset: 0.18rem;
+}
+
+.inote-prosemirror .pm-hashtag {
+  padding: 0.02rem 0.14rem;
+  border-radius: 0.18rem;
+  background: color-mix(in srgb, var(--md-tag-bg) 82%, var(--surface));
+  color: var(--md-tag-fg);
+  line-height: 1.1;
+  box-shadow: inset 0 -0.08rem 0 color-mix(in srgb, var(--md-tag-border) 75%, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .inote-prosemirror strong {
@@ -986,7 +1056,7 @@ mark {
   appearance: none;
   width: 1.02rem;
   height: 1.02rem;
-  margin: 0.48rem 0 0;
+  margin: 0.18rem 0 0;
   border: 1.6px solid var(--md-checkbox-border);
   border-radius: 0.28rem;
   background: var(--surface);
@@ -1374,6 +1444,10 @@ mark {
 
   .main-page__subtitle {
     margin-top: 0.22rem;
+  }
+
+  .editor-status {
+    gap: 0.2rem 0.75rem;
   }
 
   .note-header__title-form {

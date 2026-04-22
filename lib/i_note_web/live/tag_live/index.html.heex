@@ -7,7 +7,7 @@
   </header>
 
   <section class="panel">
-    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form">
+    <.form for={%{}} as={:search} phx-change="query_changed" class="search-form" autocomplete="off">
       <label for="tag-query" class="field-label">{t(@locale, :query)}</label>
       <input
         id="tag-query"
@@ -16,6 +16,10 @@
         class="text-input"
         value={@query}
         placeholder={t(@locale, :tag_search_title)}
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="none"
+        spellcheck="false"
         phx-debounce="250"
       />
     </.form>

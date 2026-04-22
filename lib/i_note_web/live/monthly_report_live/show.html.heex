@@ -44,7 +44,7 @@ current_month = Date.utc_today() |> Date.beginning_of_month() %>
     </nav>
   </header>
 
-  <section :if={@report_markdown == ""} class="empty-panel">
+  <section :if={@report_markdown == ""} class="empty-panel report-panel">
     <p>{t(@locale, :no_monthly_report)}</p>
   </section>
 

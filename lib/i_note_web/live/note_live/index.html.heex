@@ -12,7 +12,13 @@
 
   <section class="panel">
     <div class="filter-row filter-row--wide">
-      <.form for={%{"q" => @query}} as={:search} phx-change="query_changed" class="toolbar-field">
+      <.form
+        for={%{"q" => @query}}
+        as={:search}
+        phx-change="query_changed"
+        class="toolbar-field"
+        autocomplete="off"
+      >
         <input
           id="note-query"
           name="q"
@@ -20,6 +26,10 @@
           class="text-input"
           value={@query}
           placeholder={t(@locale, :search_notes_placeholder)}
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="none"
+          spellcheck="false"
           phx-debounce="250"
         />
       </.form>

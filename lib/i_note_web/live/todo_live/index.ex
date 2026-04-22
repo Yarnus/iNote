@@ -14,7 +14,6 @@ defmodule INoteWeb.TodoLive.Index do
        page_title: "TODO items",
        search_query: "",
        selected_date: today,
-       calendar_note_dates: Notes.list_dates_with_daily_notes(today),
        filter: :all,
        counts: %{all: 0, open: 0, done: 0},
        todos: []
@@ -32,7 +31,6 @@ defmodule INoteWeb.TodoLive.Index do
        current_path: ~p"/todos?#{query}",
        page_title: t(socket.assigns.locale, :todos_title),
        selected_date: Notes.today(),
-       calendar_note_dates: Notes.list_dates_with_daily_notes(Notes.today()),
        todos: Notes.list_todos(filter),
        counts: %{
          all: Notes.count_todos(:all),

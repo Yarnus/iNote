@@ -219,6 +219,43 @@ const ResponsiveNav = {
   }
 }
 
+const formatLocalDateTime = (isoValue, locale) => {
+  if (!isoValue) return ""
+
+  const date = new Date(isoValue)
+  if (Number.isNaN(date.getTime())) return ""
+
+  try {
+    return new Intl.DateTimeFormat(locale || document.documentElement.lang || undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(date)
+  } catch (_error) {
+    return date.toLocaleString(locale || undefined)
+  }
+}
+
+const LocalTime = {
+  mounted() {
+    this.render()
+  },
+
+  updated() {
+    this.render()
+  },
+
+  render() {
+    const formatted = formatLocalDateTime(
+      this.el.dataset.localDatetime,
+      document.documentElement.lang
+    )
+
+    if (!formatted) return
+
+    this.el.textContent = formatted
+  }
+}
+
 const MarkdownEditor = {
   mounted() {
     this.noteId = this.el.dataset.noteId
@@ -451,7 +488,7 @@ const copyText = async (text, target) => {
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 let liveSocket = new LiveSocket("/live", Socket, {
-  hooks: {CopyButton, MarkdownEditor, ResponsiveNav},
+  hooks: {CopyButton, LocalTime, MarkdownEditor, ResponsiveNav},
   params: {_csrf_token: csrfToken}
 })
 

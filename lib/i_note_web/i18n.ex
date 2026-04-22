@@ -31,6 +31,7 @@ defmodule INoteWeb.I18n do
       empty_note: "Start writing your note.",
       save_hint: "Autosaves while typing",
       saved: "Saved just now",
+      last_saved_at: "Last saved",
       dark_mode: "Theme",
       settings: "Settings",
       theme_system: "System",
@@ -101,6 +102,7 @@ defmodule INoteWeb.I18n do
       empty_note: "开始记录内容。",
       save_hint: "输入时自动保存",
       saved: "刚刚已保存",
+      last_saved_at: "上次保存",
       dark_mode: "主题",
       settings: "设置",
       theme_system: "跟随系统",
@@ -159,8 +161,8 @@ defmodule INoteWeb.I18n do
     @messages[locale][key] || @messages[@default_locale][key] || Atom.to_string(key)
   end
 
-  def weekday_labels("zh"), do: ["一", "二", "三", "四", "五", "六", "日"]
-  def weekday_labels(_), do: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  def weekday_labels("zh"), do: ["日", "一", "二", "三", "四", "五", "六"]
+  def weekday_labels(_), do: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   def month_label("zh", %Date{} = date), do: Calendar.strftime(date, "%Y年%m月")
   def month_label(_, %Date{} = date), do: Calendar.strftime(date, "%B %Y")
