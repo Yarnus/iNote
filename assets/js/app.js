@@ -69,6 +69,33 @@ const debounce = (callback, wait) => {
   return debounced
 }
 
+const isPrimaryShortcut = event => event.ctrlKey || event.metaKey
+
+const isSearchShortcut = event => isPrimaryShortcut(event) && event.key.toLowerCase() === "f"
+
+const isModeToggleShortcut = event =>
+  isPrimaryShortcut(event) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  (event.code === "Slash" || event.key === "/")
+
+const focusGlobalSearch = () => {
+  const searchInput = document.getElementById("global-search")
+
+  if (!searchInput || document.activeElement === searchInput) return false
+
+  searchInput.focus()
+  searchInput.select?.()
+  return true
+}
+
+document.addEventListener("keydown", event => {
+  if (!isSearchShortcut(event)) return
+  if (!focusGlobalSearch()) return
+
+  event.preventDefault()
+})
+
 const MarkdownEditor = {
   mounted() {
     this.noteId = this.el.dataset.noteId
@@ -115,7 +142,15 @@ const MarkdownEditor = {
       this.saveDraft(this.currentMarkdown)
     }
 
+    this.onEditorKeydown = event => {
+      if (!isModeToggleShortcut(event)) return
+
+      event.preventDefault()
+      this.setMode(this.mode === "rich" ? "source" : "rich", {focus: true})
+    }
+
     this.el.addEventListener("click", this.onModeClick)
+    this.el.addEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.addEventListener("input", this.onSourceInput)
     this.syncSourceInput(this.currentMarkdown)
     this.applyMode({focus: false})
@@ -139,6 +174,7 @@ const MarkdownEditor = {
   destroyed() {
     this.saveDraft.cancel?.()
     this.el.removeEventListener("click", this.onModeClick)
+    this.el.removeEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.removeEventListener("input", this.onSourceInput)
     this.editor.destroy()
   },
