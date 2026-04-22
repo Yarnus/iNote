@@ -16,7 +16,11 @@
         <.link
           :for={tag <- @tags}
           patch={~p"/tags?#{[tag: tag.tag]}"}
-          class={["tag-chip", @selected_tag == tag.tag && "is-active"]}
+          class={[
+            "tag-chip",
+            tag_tone_class(tag.tag),
+            @selected_tag == tag.tag && "is-active"
+          ]}
         >
           <span class="tag-chip__label">#{tag.tag}</span>
           <span class="tag-chip__count">{tag.count}</span>

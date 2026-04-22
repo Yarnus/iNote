@@ -85,6 +85,12 @@ const isToggleTaskShortcut = event =>
   !event.altKey &&
   event.key.toLowerCase() === "l"
 
+const isSaveShortcut = event =>
+  isPrimaryShortcut(event) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  event.key.toLowerCase() === "s"
+
 const focusVisibleSearchInput = () => {
   const searchInputs = [...document.querySelectorAll("[data-global-search]")]
   const visibleInput = searchInputs.find(input => !input.hidden && input.offsetParent !== null)
@@ -265,11 +271,16 @@ const LocalTime = {
 const MarkdownEditor = {
   mounted() {
     this.noteId = this.el.dataset.noteId
+    this.savedMarkdown = this.el.dataset.contentMd || ""
+    this.savedTitle = this.el.dataset.noteTitle || ""
     this.editorRoot = this.el.querySelector("[data-markdown-editor]")
     this.sourceRoot = this.el.querySelector("[data-markdown-source]")
     this.modeButtons = [...this.el.querySelectorAll("[data-editor-mode-trigger]")]
+    this.titleInput = this.el.dataset.titleInputId
+      ? document.getElementById(this.el.dataset.titleInputId)
+      : null
     this.isSyncing = false
-    this.currentMarkdown = this.el.dataset.contentMd || ""
+    this.currentMarkdown = this.savedMarkdown
     this.mode = this.restoreMode()
 
     this.saveDraft = debounce(contentMd => {
@@ -339,16 +350,32 @@ const MarkdownEditor = {
     }
 
     this.onEditorKeydown = event => {
+      if (isSaveShortcut(event) && this.isSaveShortcutTarget(event.target)) {
+        event.preventDefault()
+        this.flushSaveNow()
+        return
+      }
+
       if (!isModeToggleShortcut(event)) return
 
       event.preventDefault()
       this.setMode(this.mode === "rich" ? "source" : "rich", {focus: true})
     }
 
+    this.onWindowKeydown = event => {
+      if (event.defaultPrevented) return
+      if (!isSaveShortcut(event)) return
+      if (!this.isSaveShortcutTarget(event.target)) return
+
+      event.preventDefault()
+      this.flushSaveNow()
+    }
+
     this.el.addEventListener("click", this.onModeClick)
     this.el.addEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.addEventListener("input", this.onSourceInput)
     this.sourceRoot?.addEventListener("keydown", this.onSourceKeydown)
+    window.addEventListener("keydown", this.onWindowKeydown)
     this.syncSourceInput(this.currentMarkdown)
     this.applyMode({focus: false})
   },
@@ -356,12 +383,22 @@ const MarkdownEditor = {
   updated() {
     const nextId = this.el.dataset.noteId
     const nextMarkdown = this.el.dataset.contentMd || ""
+    const nextTitle = this.el.dataset.noteTitle || ""
+    this.titleInput = this.el.dataset.titleInputId
+      ? document.getElementById(this.el.dataset.titleInputId)
+      : null
 
     if (nextId !== this.noteId) {
       this.noteId = nextId
       this.syncFromDataset()
       return
     }
+
+    if (nextMarkdown === this.currentMarkdown) {
+      this.savedMarkdown = nextMarkdown
+    }
+
+    this.savedTitle = nextTitle
 
     if (!this.isSyncing && nextMarkdown !== this.currentMarkdown && !this.isEditorFocused()) {
       this.syncFromDataset()
@@ -374,11 +411,17 @@ const MarkdownEditor = {
     this.el.removeEventListener("keydown", this.onEditorKeydown)
     this.sourceRoot?.removeEventListener("input", this.onSourceInput)
     this.sourceRoot?.removeEventListener("keydown", this.onSourceKeydown)
+    window.removeEventListener("keydown", this.onWindowKeydown)
     this.editor.destroy()
   },
 
   syncFromDataset() {
     const markdown = this.el.dataset.contentMd || ""
+    this.savedMarkdown = markdown
+    this.savedTitle = this.el.dataset.noteTitle || ""
+    this.titleInput = this.el.dataset.titleInputId
+      ? document.getElementById(this.el.dataset.titleInputId)
+      : null
 
     this.saveDraft.cancel?.()
     this.isSyncing = true
@@ -407,6 +450,40 @@ const MarkdownEditor = {
   isEditorFocused() {
     const activeElement = document.activeElement
     return Boolean(activeElement && this.el.contains(activeElement))
+  },
+
+  isSaveShortcutTarget(target) {
+    if (!target) return false
+
+    return (
+      this.el.contains(target) ||
+      Boolean(this.titleInput && (target === this.titleInput || this.titleInput.contains(target)))
+    )
+  },
+
+  flushSaveNow() {
+    this.saveDraft.cancel?.()
+
+    if (this.mode === "rich") {
+      this.currentMarkdown = this.editor.getMarkdown()
+      this.syncSourceInput(this.currentMarkdown)
+    } else {
+      this.currentMarkdown = this.sourceRoot?.value || this.currentMarkdown
+    }
+
+    if (this.currentMarkdown !== this.savedMarkdown) {
+      this.pushEvent("set_status_idle", {})
+      this.pushEvent("autosave_note", {
+        id: this.noteId,
+        content_md: this.currentMarkdown
+      })
+    }
+
+    const nextTitle = this.titleInput?.value
+
+    if (typeof nextTitle === "string" && nextTitle !== this.savedTitle) {
+      this.pushEvent("save_title", {title: nextTitle})
+    }
   },
 
   setMode(mode, {focus = false} = {}) {

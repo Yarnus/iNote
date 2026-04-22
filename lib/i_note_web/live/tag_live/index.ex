@@ -49,4 +49,13 @@ defmodule INoteWeb.TagLive.Index do
 
     if normalized == "", do: nil, else: normalized
   end
+
+  defp tag_tone_class(tag) when is_binary(tag) do
+    case :erlang.phash2(tag, 4) do
+      0 -> "tag-chip--tone-1"
+      1 -> "tag-chip--tone-2"
+      2 -> "tag-chip--tone-3"
+      _ -> "tag-chip--tone-4"
+    end
+  end
 end

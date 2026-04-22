@@ -21,6 +21,7 @@ defmodule INoteWeb.EditorLiveTest do
     assert html =~ "data-editor-mode-trigger=\"rich\""
     assert html =~ "data-editor-mode-trigger=\"source\""
     assert html =~ "data-markdown-source"
+    assert html =~ "data-title-input-id=\"note-title\""
     assert html =~ "Write"
     assert html =~ "Source"
   end
