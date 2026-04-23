@@ -1,5 +1,7 @@
 import Config
 
+alias INote.RuntimeConfig
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration
@@ -47,6 +49,7 @@ if config_env() == :prod do
       """
 
   host = System.get_env("INOTE_HOST") || "example.com"
+  bind_ip = RuntimeConfig.parse_bind_ip!(System.get_env("INOTE_BIND_IP"))
   port = String.to_integer(System.get_env("INOTE_PORT") || "4000")
   scheme = if host in loopback_hosts, do: "http", else: "https"
 
@@ -68,11 +71,9 @@ if config_env() == :prod do
   config :i_note, INoteWeb.Endpoint,
     url: [host: host, port: port, scheme: scheme],
     http: [
-      # Enable IPv6 and bind on all interfaces.
-      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
-      # See the documentation on https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html
-      # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      # INOTE_HOST affects generated URLs and origin checks.
+      # INOTE_BIND_IP controls which interface the release listens on.
+      ip: bind_ip,
       port: port
     ],
     check_origin: check_origin,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import {Selection} from "prosemirror-state"
+import {Selection, TextSelection} from "prosemirror-state"
 import {
   applyKeyCommand,
   applyTextInput,
@@ -12,6 +12,38 @@ import {
   toggleTaskLineInText,
   toggleTaskLineText
 } from "./markdown_editor.mjs"
+
+function findTextPosition(doc, needle, offset = 1) {
+  let position = null
+
+  doc.descendants((node, pos) => {
+    if (position !== null || !node.isText || !node.text) return
+
+    const index = node.text.indexOf(needle)
+
+    if (index === -1) return
+
+    position = pos + index + offset
+  })
+
+  assert.notEqual(position, null, `expected to find text: ${needle}`)
+
+  return position
+}
+
+function placeCursor(state, needle, offset = 1) {
+  const position = findTextPosition(state.doc, needle, offset)
+  return state.apply(state.tr.setSelection(Selection.near(state.doc.resolve(position))))
+}
+
+function selectText(state, startNeedle, endNeedle = startNeedle) {
+  const from = findTextPosition(state.doc, startNeedle, 1)
+  const to = findTextPosition(state.doc, endNeedle, endNeedle.length + 1)
+
+  return state.apply(
+    state.tr.setSelection(TextSelection.between(state.doc.resolve(from), state.doc.resolve(to)))
+  )
+}
 
 test("typing ###/####/#####/###### converts the current block into heading levels 3-6", () => {
   const state = applyTextInput(createTestEditorState(""), "### ")
@@ -101,6 +133,15 @@ test("toggleTaskLineInText preserves caret on task-to-bullet toggle", () => {
   assert.equal(result.selectionEnd, 7)
 })
 
+test("toggleTaskLineInText toggles every selected non-empty line", () => {
+  const text = "alpha\nbeta\n\ngamma"
+  const result = toggleTaskLineInText(text, 2, text.length)
+
+  assert.equal(result.text, "- [ ] alpha\n- [ ] beta\n\n- [ ] gamma")
+  assert.equal(result.selectionStart, 0)
+  assert.equal(result.selectionEnd, result.text.length)
+})
+
 test("blockquote, ordered list, and code fence input rules convert blocks", () => {
   const blockquoteState = applyTextInput(createTestEditorState(""), "> ")
   const orderedListState = applyTextInput(createTestEditorState(""), "1. ")
@@ -145,6 +186,33 @@ test("Shift-Mod-l resets a checked task item to unchecked", () => {
   assert.equal(serializeMarkdown(state.doc), "- [ ] Draft spec")
 })
 
+test("Shift-Mod-l toggles a middle bullet item without splitting the list", () => {
+  const state = applyKeyCommand(placeCursor(createTestEditorState("- alpha\n- beta\n- gamma"), "beta"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- alpha\n- [ ] beta\n- gamma")
+})
+
+test("Shift-Mod-l toggles a middle task item back to bullet without splitting the list", () => {
+  const markdown = "- [ ] alpha\n- [ ] beta\n- [ ] gamma"
+  const state = applyKeyCommand(placeCursor(createTestEditorState(markdown), "beta"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- [ ] alpha\n- beta\n- [ ] gamma")
+})
+
+test("Shift-Mod-l toggles every selected list item independently", () => {
+  const initial = createTestEditorState("- alpha\n- beta\n- gamma")
+  const state = applyKeyCommand(selectText(initial, "beta", "gamma"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- alpha\n- [ ] beta\n- [ ] gamma")
+})
+
+test("Shift-Mod-l toggles every selected paragraph independently", () => {
+  const initial = createTestEditorState("Alpha\n\nBeta\n\nGamma")
+  const state = applyKeyCommand(selectText(initial, "Alpha", "Beta"), "Shift-Mod-l")
+
+  assert.equal(serializeMarkdown(state.doc), "- [ ] Alpha\n- [ ] Beta\n\nGamma")
+})
+
 test("typing - followed by space still creates a bullet list item", () => {
   const state = applyTextInput(createTestEditorState(""), "- ")
 
@@ -183,6 +251,18 @@ test("markdown parsing and serialization preserve task list markdown", () => {
   assert.match(serialized, /^- \[ \] Draft spec$/m)
   assert.match(serialized, /^- \[x\] Ship demo$/m)
   assert.doesNotMatch(serialized, /<\w+/)
+})
+
+test("markdown parsing and serialization preserve mixed task lists", () => {
+  const markdown = "- alpha\n- [ ] beta\n- gamma"
+  const doc = parseMarkdown(markdown)
+  const list = doc.firstChild
+
+  assert.equal(list.type.name, "bullet_list")
+  assert.equal(list.child(0).type.name, "list_item")
+  assert.equal(list.child(1).type.name, "task_item")
+  assert.equal(list.child(2).type.name, "list_item")
+  assert.equal(serializeMarkdown(doc), markdown)
 })
 
 test("code fence language survives markdown parsing and serialization", () => {
