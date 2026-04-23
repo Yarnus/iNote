@@ -30,6 +30,8 @@ const TASK_MARKER_PATTERN = /^\[( |x|X)\](?:\s+|$)/
 const TASK_LINE_PATTERN = /^- \[( |x|X)\](?: ?(.*))?$/
 const BULLET_LINE_PATTERN = /^- (.*)$/
 const HASHTAG_PATTERN = /(^|[\s([{\u3000])(#([\p{L}\p{N}_-]+))/gu
+const DONE_TAG_SUFFIX = " #done"
+const STATUS_TAGS = new Set(["done", "doing", "blocked"])
 const MAX_MATCH = 500
 
 const baseListNodes = addListNodes(basicSchema.spec.nodes, "paragraph block*", "block").update("code_block", {
@@ -488,6 +490,29 @@ export function toggleTaskLineInText(text, selectionStart, selectionEnd = select
   }
 }
 
+function toggleDoneTagAtLineEnd(line) {
+  return line.endsWith(DONE_TAG_SUFFIX)
+    ? line.slice(0, -DONE_TAG_SUFFIX.length)
+    : `${line}${DONE_TAG_SUFFIX}`
+}
+
+export function toggleDoneTagInText(text, selectionStart, selectionEnd = selectionStart) {
+  const lineStart = text.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1
+  const nextBreak = text.indexOf("\n", selectionStart)
+  const lineEnd = nextBreak === -1 ? text.length : nextBreak
+  const selectedText = text.slice(lineStart, lineEnd)
+  const nextSelectedText = toggleDoneTagAtLineEnd(selectedText)
+  const nextText = `${text.slice(0, lineStart)}${nextSelectedText}${text.slice(lineEnd)}`
+  const anchorOffset = Math.min(selectionStart - lineStart, nextSelectedText.length)
+  const headOffset = Math.min(selectionEnd - lineStart, nextSelectedText.length)
+
+  return {
+    text: nextText,
+    selectionStart: lineStart + anchorOffset,
+    selectionEnd: lineStart + headOffset
+  }
+}
+
 function createParagraphFromBlock(state, blockNode) {
   const {paragraph} = state.schema.nodes
 
@@ -672,6 +697,10 @@ function mapSelection(tr, selection) {
   return tr.setSelection(TextSelection.between(tr.doc.resolve(anchor), tr.doc.resolve(head)))
 }
 
+function findParagraphDepth($pos) {
+  return findAncestorDepth($pos, node => node.type.name === "paragraph")
+}
+
 function toggleCurrentLineTask(state, dispatch) {
   const actions = collectToggleActions(state).filter(Boolean)
 
@@ -697,6 +726,31 @@ function toggleCurrentLineTask(state, dispatch) {
   return true
 }
 
+function toggleCurrentLineDoneTag(state, dispatch) {
+  const paragraphDepth = findParagraphDepth(state.selection.$from)
+
+  if (paragraphDepth === null) return false
+
+  const paragraphEnd = state.selection.$from.end(paragraphDepth)
+  const paragraph = state.selection.$from.node(paragraphDepth)
+  const text = paragraph.textContent
+  let tr = state.tr
+
+  if (text.endsWith(DONE_TAG_SUFFIX)) {
+    tr = tr.delete(paragraphEnd - DONE_TAG_SUFFIX.length, paragraphEnd)
+  } else {
+    tr = tr.insertText(DONE_TAG_SUFFIX, paragraphEnd)
+  }
+
+  tr = mapSelection(tr, state.selection)
+
+  if (dispatch) {
+    dispatch(tr.scrollIntoView())
+  }
+
+  return true
+}
+
 function buildEditorKeyBindings({code, em, strong, listItem, taskItem}) {
   return {
     Enter: chainCommands(
@@ -711,6 +765,7 @@ function buildEditorKeyBindings({code, em, strong, listItem, taskItem}) {
     Backspace: chainCommands(undoInputRule, clearCurrentBlockFormatting, baseKeymap.Backspace),
     "Mod-b": toggleMark(strong),
     "Mod-i": toggleMark(em),
+    "Mod-k": toggleCurrentLineDoneTag,
     "Mod-`": toggleMark(code),
     "Shift-Mod-l": toggleCurrentLineTask,
     "Mod-z": undo,
@@ -759,9 +814,16 @@ const editorPlugins = [
 ]
 
 function buildHashtagDecorations(doc) {
-  const decorations = getHashtagDecorationRanges(doc).map(({from, to}) =>
-    Decoration.inline(from, to, {class: "pm-hashtag"})
-  )
+  const decorations = [
+    ...getHashtagDecorationRanges(doc).map(({from, to}) =>
+      Decoration.inline(from, to, {class: "pm-hashtag"})
+    ),
+    ...getStatusLineDecorations(doc).map(({from, to, status}) =>
+      Decoration.inline(from, to, {
+        class: `pm-status-line pm-status-line--${status}`
+      })
+    )
+  ]
 
   return decorations.length === 0 ? DecorationSet.empty : DecorationSet.create(doc, decorations)
 }
@@ -787,6 +849,55 @@ export function getHashtagDecorationRanges(doc) {
   })
 
   return ranges
+}
+
+function getStatusTagRange(node, pos) {
+  const paragraphStart = pos + 1
+  let matchRange = null
+
+  node.descendants((child, childPos) => {
+    if (matchRange) return false
+    if (!child.isText || !child.text) return
+    if (child.marks.some(mark => mark.type.name === "code")) return false
+
+    HASHTAG_PATTERN.lastIndex = 0
+
+    for (const match of child.text.matchAll(HASHTAG_PATTERN)) {
+      const tag = (match[3] || "").toLowerCase()
+
+      if (STATUS_TAGS.has(tag)) {
+        const prefix = match[1] || ""
+        const hashtag = match[2]
+        const hashtagStart = paragraphStart + childPos + match.index + prefix.length
+
+        matchRange = {
+          from: paragraphStart,
+          to: hashtagStart + hashtag.length,
+          status: tag
+        }
+
+        return false
+      }
+    }
+
+    return matchRange === null
+  })
+
+  return matchRange
+}
+
+export function getStatusLineDecorations(doc) {
+  const decorations = []
+
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "paragraph") return
+
+    const range = getStatusTagRange(node, pos)
+
+    if (range) decorations.push(range)
+  })
+
+  return decorations
 }
 
 function buildCodeBlockDecorations(doc) {

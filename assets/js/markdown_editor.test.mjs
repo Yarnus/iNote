@@ -6,9 +6,11 @@ import {
   applyTextInput,
   createTestEditorState,
   getHashtagDecorationRanges,
+  getStatusLineDecorations,
   parseMarkdown,
   runKeyCommand,
   serializeMarkdown,
+  toggleDoneTagInText,
   toggleTaskLineInText,
   toggleTaskLineText
 } from "./markdown_editor.mjs"
@@ -142,6 +144,24 @@ test("toggleTaskLineInText toggles every selected non-empty line", () => {
   assert.equal(result.selectionEnd, result.text.length)
 })
 
+test("toggleDoneTagInText toggles the current line suffix", () => {
+  const text = "alpha\nbeta\ngamma"
+  const result = toggleDoneTagInText(text, 8)
+
+  assert.equal(result.text, "alpha\nbeta #done\ngamma")
+  assert.equal(result.selectionStart, 8)
+  assert.equal(result.selectionEnd, 8)
+})
+
+test("toggleDoneTagInText removes only a trailing done suffix", () => {
+  const text = "beta #done"
+  const result = toggleDoneTagInText(text, text.length)
+
+  assert.equal(result.text, "beta")
+  assert.equal(result.selectionStart, 4)
+  assert.equal(result.selectionEnd, 4)
+})
+
 test("blockquote, ordered list, and code fence input rules convert blocks", () => {
   const blockquoteState = applyTextInput(createTestEditorState(""), "> ")
   const orderedListState = applyTextInput(createTestEditorState(""), "1. ")
@@ -211,6 +231,22 @@ test("Shift-Mod-l toggles every selected paragraph independently", () => {
   const state = applyKeyCommand(selectText(initial, "Alpha", "Beta"), "Shift-Mod-l")
 
   assert.equal(serializeMarkdown(state.doc), "- [ ] Alpha\n- [ ] Beta\n\nGamma")
+})
+
+test("Mod-k toggles a done tag at the end of the current paragraph", () => {
+  const initial = placeCursor(createTestEditorState("Finish parser"), "Finish")
+  const withDone = applyKeyCommand(initial, "Mod-k")
+  const reset = applyKeyCommand(withDone, "Mod-k")
+
+  assert.equal(serializeMarkdown(withDone.doc), "Finish parser #done")
+  assert.equal(serializeMarkdown(reset.doc), "Finish parser")
+})
+
+test("Mod-k toggles a done tag inside list item paragraphs", () => {
+  const initial = placeCursor(createTestEditorState("- alpha"), "alpha")
+  const state = applyKeyCommand(initial, "Mod-k")
+
+  assert.equal(serializeMarkdown(state.doc), "- alpha #done")
 })
 
 test("typing - followed by space still creates a bullet list item", () => {
@@ -345,4 +381,18 @@ test("hashtag decorations apply in paragraphs but not headings", () => {
   const decoratedText = ranges.map(({from, to}) => doc.textBetween(from, to, "\n", "\n"))
 
   assert.deepEqual(decoratedText, ["#Tag"])
+})
+
+test("status line decorations apply when paragraphs contain supported tags", () => {
+  const doc = parseMarkdown("# Heading #done\n\nPlain #done and `#blocked`\n\n- item #blocked")
+  const decorations = getStatusLineDecorations(doc)
+  const decoratedBlocks = decorations.map(({from, to, status}) => ({
+    status,
+    text: doc.textBetween(from, to, "\n", "\n")
+  }))
+
+  assert.deepEqual(decoratedBlocks, [
+    {status: "done", text: "Plain #done"},
+    {status: "blocked", text: "item #blocked"}
+  ])
 })

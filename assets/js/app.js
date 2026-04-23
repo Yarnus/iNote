@@ -2,7 +2,7 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-import {createMarkdownEditor, toggleTaskLineInText} from "./markdown_editor.mjs"
+import {createMarkdownEditor, toggleDoneTagInText, toggleTaskLineInText} from "./markdown_editor.mjs"
 
 const THEME_KEY = "inote:theme"
 const EDITOR_MODE_KEY = "inote:editor-mode"
@@ -84,6 +84,12 @@ const isToggleTaskShortcut = event =>
   event.shiftKey &&
   !event.altKey &&
   event.key.toLowerCase() === "l"
+
+const isToggleDoneShortcut = event =>
+  isPrimaryShortcut(event) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  event.key.toLowerCase() === "k"
 
 const isSaveShortcut = event =>
   isPrimaryShortcut(event) &&
@@ -320,6 +326,21 @@ const MarkdownEditor = {
     }
 
     this.onSourceKeydown = event => {
+      if (isToggleDoneShortcut(event)) {
+        event.preventDefault()
+
+        const nextState = toggleDoneTagInText(
+          event.target.value,
+          event.target.selectionStart,
+          event.target.selectionEnd
+        )
+
+        event.target.value = nextState.text
+        event.target.setSelectionRange(nextState.selectionStart, nextState.selectionEnd)
+        event.target.dispatchEvent(new Event("input", {bubbles: true}))
+        return
+      }
+
       if (isToggleTaskShortcut(event)) {
         event.preventDefault()
 
