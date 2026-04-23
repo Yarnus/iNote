@@ -418,7 +418,7 @@ function handleTabCommand(...commands) {
       }
     }
 
-    return true
+    return false
   }
 }
 

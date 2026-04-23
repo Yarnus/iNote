@@ -358,11 +358,11 @@ test("Tab indents a task item and preserves its checked state", () => {
   assert.equal(nestedTaskList.firstChild.textContent, "child")
 })
 
-test("Tab is still handled when the current block cannot be indented", () => {
+test("Tab is not handled when the current block cannot be indented", () => {
   const initial = createTestEditorState("plain paragraph")
   const result = runKeyCommand(initial, "Tab")
 
-  assert.equal(result.handled, true)
+  assert.equal(result.handled, false)
   assert.equal(serializeMarkdown(result.state.doc), "plain paragraph")
 })
 
