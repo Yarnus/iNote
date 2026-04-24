@@ -106,6 +106,25 @@ defmodule INote.NotesTest do
     assert daily.note_date in dates
   end
 
+  test "list_daily_notes_in_range/2 returns only daily notes in ascending date order" do
+    april_second = Notes.get_or_create_daily_note!(~D[2026-04-02])
+    april_fourth = Notes.get_or_create_daily_note!(~D[2026-04-04])
+    _april_sixth = Notes.get_or_create_daily_note!(~D[2026-04-06])
+    {:ok, normal_note} = Notes.create_note(%{title: "Normal note in range"})
+
+    notes = Notes.list_daily_notes_in_range(~D[2026-04-02], ~D[2026-04-05])
+
+    assert Enum.map(notes, & &1.note_date) == [~D[2026-04-02], ~D[2026-04-04]]
+    assert Enum.all?(notes, &(&1.kind == :daily))
+    refute Enum.any?(notes, &(&1.id == normal_note.id))
+    assert Enum.any?(notes, &(&1.id == april_second.id))
+    assert Enum.any?(notes, &(&1.id == april_fourth.id))
+  end
+
+  test "list_daily_notes_in_range/2 returns an empty list when start_date is after end_date" do
+    assert Notes.list_daily_notes_in_range(~D[2026-04-10], ~D[2026-04-09]) == []
+  end
+
   test "list_monthly_report_weeks/1 groups daily note checkboxes by report week" do
     april_first = Notes.get_or_create_daily_note!(~D[2026-04-01])
     april_third = Notes.get_or_create_daily_note!(~D[2026-04-03])

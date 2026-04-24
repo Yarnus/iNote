@@ -32,6 +32,12 @@ defmodule INoteWeb.Router do
     end
   end
 
+  scope "/api", INoteWeb do
+    pipe_through :api
+
+    get "/daily-notes", DailyNoteAPIController, :index
+  end
+
   if Application.compile_env(:i_note, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 

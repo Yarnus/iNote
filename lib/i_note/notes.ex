@@ -126,6 +126,19 @@ defmodule INote.Notes do
     )
   end
 
+  def list_daily_notes_in_range(%Date{} = start_date, %Date{} = end_date) do
+    if Date.compare(start_date, end_date) == :gt do
+      []
+    else
+      Repo.all(
+        from note in Note,
+          where:
+            note.kind == :daily and note.note_date >= ^start_date and note.note_date <= ^end_date,
+          order_by: [asc: note.note_date, asc: note.id]
+      )
+    end
+  end
+
   def list_dates_with_notes(%Date{} = month_start), do: list_dates_with_daily_notes(month_start)
 
   def search_notes(query) when query in [nil, ""], do: []
