@@ -7,6 +7,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f0e7" />
     <script>
       (() => {
         const stored = localStorage.getItem("inote:theme");
@@ -20,6 +22,10 @@
     <.live_title suffix=" - iNote">
       {assigns[:page_title] || "iNote"}
     </.live_title>
+    <link phx-track-static rel="icon" type="image/svg+xml" href={~p"/favicon.svg"} />
+    <link phx-track-static rel="icon" sizes="any" href={~p"/favicon.ico"} />
+    <link phx-track-static rel="apple-touch-icon" href={~p"/apple-touch-icon.png"} />
+    <link phx-track-static rel="manifest" href={~p"/site.webmanifest"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>

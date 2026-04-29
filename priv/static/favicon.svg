@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">iNote icon</title>
+  <desc id="desc">A paper-toned bookmark shaped lowercase i on an indigo rounded square.</desc>
+  <rect width="256" height="256" rx="56" fill="#617789" />
+  <circle cx="128" cy="68" r="20" fill="#f4f0e7" />
+  <path
+    d="M96 102c0-7.732 6.268-14 14-14h36c7.732 0 14 6.268 14 14v104c0 4.117-4.694 6.48-8.004 4.029L128 193.5l-23.996 16.529C100.694 212.48 96 210.117 96 206V102Z"
+    fill="#f4f0e7"
+  />
+</svg>
