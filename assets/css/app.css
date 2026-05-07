@@ -62,7 +62,7 @@
   --md-quote-border: #bfac87;
   --md-list-marker: #877658;
   --md-checkbox-border: #b8a58a;
-  --md-checkbox-fill: #6d82aa;
+  --md-checkbox-fill: var(--success);
   --md-checkbox-check: #faf7f0;
   --md-code-keyword: #7d5f96;
   --md-code-string: #7c6a2d;
@@ -127,7 +127,7 @@ html[data-theme="dark"] {
   --md-quote-border: #a49574;
   --md-list-marker: #a19171;
   --md-checkbox-border: #7a7768;
-  --md-checkbox-fill: #7e9cd8;
+  --md-checkbox-fill: var(--success);
   --md-checkbox-check: #1f2127;
   --md-code-keyword: #c4a7e7;
   --md-code-string: #98bb6c;
@@ -1058,11 +1058,31 @@ mark {
 }
 
 .inote-prosemirror ul {
-  list-style: disc;
+  list-style-type: disc;
+}
+
+.inote-prosemirror ul ul {
+  list-style-type: circle;
+}
+
+.inote-prosemirror ul ul ul {
+  list-style-type: square;
 }
 
 .inote-prosemirror ol {
-  list-style: decimal;
+  list-style-type: decimal;
+}
+
+.inote-prosemirror ol ol {
+  list-style-type: lower-alpha;
+}
+
+.inote-prosemirror ol ol ol {
+  list-style-type: lower-roman;
+}
+
+.inote-prosemirror ol ol ol ol {
+  list-style-type: decimal;
 }
 
 .inote-prosemirror li {
@@ -1229,7 +1249,7 @@ mark {
   appearance: none;
   width: 1.02rem;
   height: 1.02rem;
-  margin: 0.18rem 0 0;
+  margin: 0.1rem 0 0;
   border: 1.6px solid var(--md-checkbox-border);
   border-radius: 0.28rem;
   background: var(--surface);
@@ -1274,9 +1294,8 @@ mark {
   margin-top: 0;
 }
 
-.pm-task-item[data-checked="true"] .pm-task-item__content > p:first-child {
-  color: var(--text-muted);
-  text-decoration: line-through;
+.pm-task-item[data-checked="true"] .pm-task-item__content {
+  color: color-mix(in srgb, var(--text) 72%, var(--success));
 }
 
 .markdown-editor[data-placeholder-visible="true"] .inote-prosemirror p:first-child::before {
@@ -1355,9 +1374,24 @@ mark {
   align-items: flex-start;
 }
 
+.todo-row.is-done .todo-row__body {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.todo-row.is-done .todo-row__body::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0.08rem;
+  color: var(--success);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .todo-row.is-done .todo-row__text {
-  color: var(--text-muted);
-  text-decoration: line-through;
+  color: color-mix(in srgb, var(--text) 74%, var(--success));
 }
 
 .text-link {
@@ -1564,11 +1598,25 @@ mark {
 }
 
 .todo-row.is-done {
-  background: color-mix(in srgb, var(--module-surface-muted) 82%, var(--module-surface));
+  border-color: color-mix(in srgb, var(--success) 24%, var(--module-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--success) 10%, var(--module-surface-strong)),
+    color-mix(in srgb, var(--success) 6%, var(--module-surface-muted))
+  );
+}
+
+.todo-row.is-done:hover {
+  border-color: color-mix(in srgb, var(--success) 34%, var(--module-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--success) 14%, var(--module-surface-strong)),
+    color-mix(in srgb, var(--success) 9%, var(--module-surface))
+  );
 }
 
 .todo-row.is-done .todo-row__meta {
-  color: color-mix(in srgb, var(--text-muted) 88%, var(--surface));
+  color: color-mix(in srgb, var(--text-muted) 62%, var(--success));
 }
 
 @media (min-width: 1280px) {
